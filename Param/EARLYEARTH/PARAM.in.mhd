@@ -37,16 +37,13 @@ Param/EARTH/imf19980504.dat		NameSolarWindFile
 0.5			DtUpdateB0
 
 #USERINPUTBEGIN -----------------------------------
-#EARLYEARTHPLOT
-1.0			ConstantPlotValue
 #EARLYEARTHTAUXUV
 1.0e-22			XuvSigmaSi
-1.0e15			XuvNeutralN0Si
-5.0e5			XuvNeutralScaleHeightSi
-6.371e6			XuvNeutralR0Si
-1.0e5			XuvRayStepSi
--1.0			XuvRayMaxSi
 0.0			XuvNeutralMinSi
+4.0			XuvFluxSi
+#EARLYEARTHXUVSWITCH
+F			UseXuvOctree
+F			UseXuvBodyShadow
 #USERINPUTEND -------------------------------------
 
 #BORIS
@@ -140,9 +137,9 @@ T			DoSaveInitial
 #SAVEPLOT
 1			nPlotFile
 y=0 VAR tec		StringPlot
-1			DnSavePlot
+10			DnSavePlot
 -1.0			DtSavePlot
-{MHD} uconst tauxuvo	NameVars
+{MHD} tauxuv xuvheat	NameVars
 {default}		NamePars
 
 #SAVELOGFILE
@@ -156,5 +153,17 @@ dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status		NameLogVars
 F			IsTimeAccurate
 
 #STOP
-20			MaxIteration
+10			MaxIteration
+-1.0			tSimulationMax
+
+#RUN ##########################################################################
+
+#USERINPUTBEGIN -----------------------------------
+#EARLYEARTHXUVSWITCH
+T			UseXuvOctree
+F			UseXuvBodyShadow
+#USERINPUTEND -------------------------------------
+
+#STOP
+50			MaxIteration
 -1.0			tSimulationMax
