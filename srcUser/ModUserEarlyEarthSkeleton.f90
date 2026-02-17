@@ -5,7 +5,7 @@ module ModUser
        user_set_cell_boundary, user_initial_perturbation, &
        user_set_ics, user_init_session, &
        user_specify_region, user_amr_criteria, user_get_log_var, &
-       user_calc_sources_expl, user_calc_sources_impl, &
+       user_calc_sources_impl, &
        user_init_point_implicit, user_get_b0, user_update_states, &
        user_calc_timestep, user_normalization, user_io_units, &
        user_set_resistivity, user_material_properties, i_type_block_user
@@ -18,8 +18,9 @@ module ModUser
   real :: XuvSigmaSi = 1.0e-22
   real :: XuvNeutralMinSi = 0.0
   integer :: XuvOctreeMaxIter = 12
-  logical :: UseXuvOctree = .true.
+  logical :: UseXuv = .false.
   logical :: UseXuvBodyShadow = .true.
+  logical :: UseHeatingSource = .true.
   real :: XuvFluxSi = 4.0
   logical :: UseTauDebugLog = .true.
   integer :: nTauUpdateCall = 0
@@ -45,13 +46,16 @@ contains
        if(.not.read_command(NameCommand)) CYCLE
 
        select case(NameCommand)
-       case('#EARLYEARTHTAUXUV')
-          call read_var('XuvSigmaSi', XuvSigmaSi)
-          call read_var('XuvNeutralMinSi', XuvNeutralMinSi)
-          call read_var('XuvFluxSi', XuvFluxSi)
-       case('#EARLYEARTHXUVSWITCH')
-          call read_var('UseXuvOctree', UseXuvOctree)
+       case('#EARTHXUV')
+          call read_var('UseXuv', UseXuv)
+          if(UseXuv) then
+             call read_var('XuvSigmaSi', XuvSigmaSi)
+             call read_var('XuvNeutralMinSi', XuvNeutralMinSi)
+             call read_var('XuvFluxSi', XuvFluxSi)
+          end if
+       case('#EARTHXUVSWITCH')
           call read_var('UseXuvBodyShadow', UseXuvBodyShadow)
+          call read_var('UseHeatingSource', UseHeatingSource)
        case('#USERINPUTEND')
           if(iProc == 0 .and. lVerbose > 0) then
              call write_prefix
@@ -133,6 +137,38 @@ contains
 
   end subroutine user_set_plot_var
 
+  subroutine user_calc_sources_expl(iBlock)
+
+    use BATL_lib, ONLY: nI, nJ, nK, Used_GB
+    use ModAdvance, ONLY: Source_VC
+    use ModConservative, ONLY: UseNonConservative, nConservCrit, IsConserv_CB
+    use ModPhysics, ONLY: Si2No_V, UnitEnergyDens_, UnitT_, GammaMinus1
+    use ModVarIndexes, ONLY: p_, Energy_
+
+    integer, intent(in) :: iBlock
+    integer :: i, j, k
+    real :: HeatRateNo
+
+    if(.not.UseHeatingSource) RETURN
+    if(.not.UseXuv) RETURN
+    if(.not.allocated(XuvHeat_GB)) RETURN
+
+    do k = 1, nK; do j = 1, nJ; do i = 1, nI
+       if(.not.Used_GB(i,j,k,iBlock)) CYCLE
+
+       HeatRateNo = XuvHeat_GB(i,j,k,iBlock) * &
+            Si2No_V(UnitEnergyDens_) / Si2No_V(UnitT_)
+
+       if(UseNonConservative .and. &
+            .not.(nConservCrit > 0 .and. IsConserv_CB(i,j,k,iBlock))) then
+          Source_VC(p_,i,j,k) = Source_VC(p_,i,j,k) + GammaMinus1*HeatRateNo
+       else
+          Source_VC(Energy_,i,j,k) = Source_VC(Energy_,i,j,k) + HeatRateNo
+       end if
+    end do; end do; end do
+
+  end subroutine user_calc_sources_expl
+
   subroutine update_tauxuv_octree
 
     use BATL_lib, ONLY: nI, nJ, nK, MinI, MaxI, MinJ, MaxJ, MinK, MaxK, &
@@ -175,7 +211,7 @@ contains
       allocate(XuvHeat_GB(MinI:MaxI,MinJ:MaxJ,MinK:MaxK,MaxBlock))
     end if
 
-    if(.not.UseXuvOctree) then
+    if(.not.UseXuv) then
        TauOctree_GB = 0.0
        XuvHeat_GB = 0.0
        IsTauOctreeReady = .true.

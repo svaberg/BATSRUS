@@ -36,16 +36,6 @@ Param/EARTH/imf19980504.dat		NameSolarWindFile
 #UPDATEB0
 0.5			DtUpdateB0
 
-#USERINPUTBEGIN -----------------------------------
-#EARLYEARTHTAUXUV
-1.0e-22			XuvSigmaSi
-0.0			XuvNeutralMinSi
-4.0			XuvFluxSi
-#EARLYEARTHXUVSWITCH
-F			UseXuvOctree
-F			UseXuvBodyShadow
-#USERINPUTEND -------------------------------------
-
 #BORIS
 T			UseBorisCorrection
 0.02			BorisClightFactor
@@ -159,9 +149,14 @@ F			IsTimeAccurate
 #RUN ##########################################################################
 
 #USERINPUTBEGIN -----------------------------------
-#EARLYEARTHXUVSWITCH
-T			UseXuvOctree
-F			UseXuvBodyShadow
+#EARTHXUV
+T			UseXuv
+1.0e-22			XuvSigmaSi
+0.0			XuvNeutralMinSi
+4.0			XuvFluxSi
+#EARTHXUVSWITCH
+T			UseXuvBodyShadow
+T			UseHeatingSource
 #USERINPUTEND -------------------------------------
 
 #STOP
