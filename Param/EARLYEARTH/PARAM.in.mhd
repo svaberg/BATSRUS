@@ -1,5 +1,5 @@
 #DESCRIPTION
-Param/EARLYEARTH/PARAM.in.mhd: Early Earth baseline, pure MHD, CPU-friendly	StringDescription
+Param/EARLYEARTH/PARAM.in.mhd: Early Earth baseline, pure MHD, CPU-friendly		StringDescription
 
 #UPDATE
 slow			TypeUpdate
@@ -21,12 +21,33 @@ cumu			TypeTimingReport
 0			iMinute
 0			iSecond
 
+#DIPOLE
+-3.11e-5		DipoleStrengthSi [T]
+
+#MAGNETICAXIS
+T			IsMagAxisPrimary
+11.0			MagAxisTheta [degree]
+289.1			MagAxisPhi [degree]
+
 #SOLARWINDFILE
 T			UseSolarWindFile
-Param/EARTH/imf19980504.dat	NameSolarWindFile
+Param/EARTH/imf19980504.dat		NameSolarWindFile
 
 #UPDATEB0
 0.5			DtUpdateB0
+
+#USERINPUTBEGIN -----------------------------------
+#EARLYEARTHPLOT
+1.0			ConstantPlotValue
+#EARLYEARTHTAUXUV
+1.0e-22			XuvSigmaSi
+1.0e15			XuvNeutralN0Si
+5.0e5			XuvNeutralScaleHeightSi
+6.371e6			XuvNeutralR0Si
+1.0e5			XuvRayStepSi
+-1.0			XuvRayMaxSi
+0.0			XuvNeutralMinSi
+#USERINPUTEND -------------------------------------
 
 #BORIS
 T			UseBorisCorrection
@@ -117,27 +138,23 @@ F			DoSaveRestart
 T			DoSaveInitial
 
 #SAVEPLOT
-3			nPlotFile
-y=0 FUL tec		StringPlot
--1			DnSavePlot
-1.0			DtSavePlot
-3d FUL tec		StringPlot
--1			DnSavePlot
-1.0			DtSavePlot
-y=0 VAR idl_ascii	StringPlot
--1			DnSavePlot
-1.0			DtSavePlot
--1.			DxSavePlot
-rho p bx ux		NameVars
+1			nPlotFile
+y=0 VAR tec		StringPlot
+1			DnSavePlot
+-1.0			DtSavePlot
+{MHD} uconst tauxuvo	NameVars
 {default}		NamePars
 
 #SAVELOGFILE
 T			DoSaveLogfile
 VAR			StringLog
--1			DnSaveLogfile
-4.0			DtSaveLogfile
-dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status	NameLogVars
+200			DnSaveLogfile
+-1.0			DtSaveLogfile
+dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status		NameLogVars
+
+#TIMEACCURATE
+F			IsTimeAccurate
 
 #STOP
--1			MaxIteration
-1.0			tSimulationMax
+20			MaxIteration
+-1.0			tSimulationMax
