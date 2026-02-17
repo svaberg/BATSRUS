@@ -76,6 +76,11 @@ test_help:
 	@echo "    test_earlyearth_skeleton_rundir  (create run directory for early earth skeleton test)"
 	@echo "    test_earlyearth_skeleton_run     (run early earth skeleton test)"
 	@echo "    test_earlyearth_skeleton_check   (check early earth skeleton test against reference)"
+	@echo "    test_earlyearth_mhd        (run early earth pure-MHD baseline test)"
+	@echo "    test_earlyearth_mhd_compile (compile early earth pure-MHD baseline test)"
+	@echo "    test_earlyearth_mhd_rundir  (create run directory for early earth pure-MHD test)"
+	@echo "    test_earlyearth_mhd_run     (run early earth pure-MHD baseline test)"
+	@echo "    test_earlyearth_mhd_check   (check early earth pure-MHD output sanity)"
 	@echo "    test_shocktube_1d          (run 1D shocktube test on GPU)"
 	@echo "    test_stitch                (run STITCH test)"
 	@echo "    test_timewarp_1d           (run 1D time warp test)"
@@ -275,7 +280,7 @@ test_shocktube_check:
 
 ### EARLY EARTH SKELETON TEST ###
 
-test_earlyearth: test_earlyearth_skeleton
+test_earlyearth: test_earlyearth_mhd
 
 test_earlyearth_skeleton:
 	touch test_earlyearth_skeleton.diff
@@ -307,6 +312,42 @@ test_earlyearth_skeleton_check:
 		Param/EARLYEARTH/TestOutput/mhdhyp_ref.out \
 		> test_earlyearth_skeleton.diff)
 	ls -l test_earlyearth_skeleton.diff
+
+### EARLY EARTH PURE MHD BASELINE ###
+
+test_earlyearth_mhd:
+	touch test_earlyearth_mhd.diff
+	@echo "test_earlyearth_mhd_compile..." > test_earlyearth_mhd.diff
+	$(MAKE) test_earlyearth_mhd_compile
+	@echo "test_earlyearth_mhd_rundir..." > test_earlyearth_mhd.diff
+	$(MAKE) test_earlyearth_mhd_rundir
+	@echo "test_earlyearth_mhd_run..." > test_earlyearth_mhd.diff
+	$(MAKE) test_earlyearth_mhd_run
+	@echo "test_earlyearth_mhd_check..." > test_earlyearth_mhd.diff
+	$(MAKE) test_earlyearth_mhd_check
+
+test_earlyearth_mhd_compile:
+	./Config.pl -default -e=Mhd -u=EarlyEarthSkeleton -ng=2 -g=10,10,10
+	./Config.pl -opt=Param/EARLYEARTH/PARAM.in.mhd
+	$(MAKE) BATSRUS
+	make PIDL
+
+test_earlyearth_mhd_rundir: test_rundir
+	cd ${TESTDIR}; cp Param/EARLYEARTH/PARAM.in.mhd PARAM.in
+	-./TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test_earlyearth_mhd_run:
+	cd ${TESTDIR}; ${MPIRUN} ./BATSRUS.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -m -replace RESULTS
+
+test_earlyearth_mhd_check:
+	@File=`ls ${TESTDIR}/RESULTS/GM/y=0_var_*t00000001*.out | head -1`; \
+	awk 'NR>5{if(n==0){rmin=rmax=$$3;bxmin=bxmax=$$5;n=1}; \
+	    if($$3<rmin)rmin=$$3; if($$3>rmax)rmax=$$3; \
+	    if($$5<bxmin)bxmin=$$5; if($$5>bxmax)bxmax=$$5} \
+	    END{printf("rho=[%g,%g] bx=[%g,%g]\n",rmin,rmax,bxmin,bxmax); \
+	    if(rmax-rmin < 0.5) exit 2}' $$File > test_earlyearth_mhd.diff
+	ls -l test_earlyearth_mhd.diff
 
 ### TIMEWARP SHOCK TUBE TEST ###
 
