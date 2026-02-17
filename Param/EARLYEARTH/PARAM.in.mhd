@@ -117,7 +117,13 @@ F			DoSaveRestart
 T			DoSaveInitial
 
 #SAVEPLOT
-1			nPlotFile
+3			nPlotFile
+y=0 FUL tec		StringPlot
+-1			DnSavePlot
+1.0			DtSavePlot
+3d FUL tec		StringPlot
+-1			DnSavePlot
+1.0			DtSavePlot
 y=0 VAR idl_ascii	StringPlot
 -1			DnSavePlot
 1.0			DtSavePlot
