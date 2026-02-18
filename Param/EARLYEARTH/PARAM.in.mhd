@@ -119,31 +119,49 @@ mc3			TypeLimiter
 0.60			CflExpl
 
 #SAVERESTART
-F			DoSaveRestart
+T			DoSaveRestart
+4000			DnSaveRestart
+-1.0			DtSaveRestart
+
+#RESTARTOUTFILE
+procseries		StringRestartOutFile
 
 #SAVEINITIAL
 T			DoSaveInitial
 
 #SAVEPLOT
-1			nPlotFile
+3			nPlotFile
 y=0 VAR tec		StringPlot
-10			DnSavePlot
+200			DnSavePlot
 -1.0			DtSavePlot
-{MHD} tauxuv xuvheat	NameVars
-{default}		NamePars
+{MHD} xuvtau xuvheat	NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc		NamePars
+z=0 VAR tec		StringPlot
+1000			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat	NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc		NamePars
+3d VAR tec		StringPlot
+1000			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat	NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc		NamePars
 
 #SAVELOGFILE
 T			DoSaveLogfile
 VAR			StringLog
-200			DnSaveLogfile
+400			DnSaveLogfile
 -1.0			DtSaveLogfile
 dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status		NameLogVars
 
 #TIMEACCURATE
 F			IsTimeAccurate
 
+#USERSWITCH
++source			StringSwitch
+
 #STOP
-10			MaxIteration
+4000			MaxIteration
 -1.0			tSimulationMax
 
 #RUN ##########################################################################
@@ -151,14 +169,48 @@ F			IsTimeAccurate
 #USERINPUTBEGIN -----------------------------------
 #EARTHXUV
 T			UseXuv
-1.0e-22			XuvSigmaSi
-0.0			XuvNeutralMinSi
-4.0			XuvFluxSi
+4.64e-3			XuvFluxSi [W/m^2, integrated XUV at source boundary]
+1.0e-22			XuvSigmaSi [m^2, effective absorber cross section]
+
 #EARTHXUVSWITCH
 T			UseXuvBodyShadow
-T			UseHeatingSource
+T			UseHeatingSource [TBD remove: redundant with #USERSWITCH +source]
 #USERINPUTEND -------------------------------------
 
 #STOP
-50			MaxIteration
+8000			MaxIteration
+-1.0			tSimulationMax
+
+#RUN ##########################################################################
+
+#USERINPUTBEGIN -----------------------------------
+#EARTHXUV
+T			UseXuv
+4.64e-1			XuvFluxSi [W/m^2, integrated XUV at source boundary; 100x]
+1.0e-22			XuvSigmaSi [m^2, effective absorber cross section]
+
+#EARTHXUVSWITCH
+T			UseXuvBodyShadow
+T			UseHeatingSource [TBD remove: redundant with #USERSWITCH +source]
+#USERINPUTEND -------------------------------------
+
+#STOP
+12000			MaxIteration
+-1.0			tSimulationMax
+
+#RUN ##########################################################################
+
+#USERINPUTBEGIN -----------------------------------
+#EARTHXUV
+T			UseXuv
+4.64e1			XuvFluxSi [W/m^2, integrated XUV at source boundary; 10000x]
+1.0e-22			XuvSigmaSi [m^2, effective absorber cross section]
+
+#EARTHXUVSWITCH
+T			UseXuvBodyShadow
+T			UseHeatingSource [TBD remove: redundant with #USERSWITCH +source]
+#USERINPUTEND -------------------------------------
+
+#STOP
+16000			MaxIteration
 -1.0			tSimulationMax
