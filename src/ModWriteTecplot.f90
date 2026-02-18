@@ -993,12 +993,14 @@ contains
     use ModIO, ONLY: StringDateOrTime, DoSaveTecBinary
     use ModNumConst, ONLY: cRadToDeg
     use BATL_lib, ONLY: nProc, nI, nJ, nK, nIJK, nNodeUsed
+    use ModUserInterface, ONLY: user_get_log_var
 
     integer, intent(in), optional:: iUnitIn
 
     character(len=8) :: StringDate
     character(len=10):: StringTime
     integer:: iUnitHere
+    real   :: UserScalar
 
     logical:: DoTest
     character(len=*), parameter:: NameSub = 'write_tecplot_auxdata'
@@ -1117,6 +1119,27 @@ contains
        else
           write(iUnitHere) 'AUXDATA TIMESIMSHORT="T= SS"', CharNewLine
        end if
+
+       call user_get_log_var(UserScalar, 'usexuv')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere) 'AUXDATA UseXuv="', real2str(UserScalar,"f8.3"), &
+            '"', CharNewLine
+       call user_get_log_var(UserScalar, 'xuvfluxsi')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere) 'AUXDATA XuvFluxSi="', real2str(UserScalar,"es13.5"), &
+            '"', CharNewLine
+       call user_get_log_var(UserScalar, 'xuvsigmasi')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere) 'AUXDATA XuvSigmaSi="', real2str(UserScalar,"es13.5"), &
+            '"', CharNewLine
+       call user_get_log_var(UserScalar, 'usexuvbshd')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere) 'AUXDATA UseXuvBodyShadow="', &
+            real2str(UserScalar,"f8.3"), '"', CharNewLine
+       call user_get_log_var(UserScalar, 'useheatsrc')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere) 'AUXDATA UseHeatingSource="', &
+            real2str(UserScalar,"f8.3"), '"', CharNewLine
     else
        ! BLOCKS
        write(iUnitHere,'(a,i12,3(a,i2),a)') 'AUXDATA BLOCKS="',nNodeUsed,'  ',&
@@ -1215,6 +1238,27 @@ contains
        else
           write(iUnitHere,'(a)') 'AUXDATA TIMESIMSHORT=" SS"'
        end if
+
+       call user_get_log_var(UserScalar, 'usexuv')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere,'(a,a,a)') 'AUXDATA UseXuv="', &
+            real2str(UserScalar,"f8.3"), '"'
+       call user_get_log_var(UserScalar, 'xuvfluxsi')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere,'(a,a,a)') 'AUXDATA XuvFluxSi="', &
+            real2str(UserScalar,"es13.5"), '"'
+       call user_get_log_var(UserScalar, 'xuvsigmasi')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere,'(a,a,a)') 'AUXDATA XuvSigmaSi="', &
+            real2str(UserScalar,"es13.5"), '"'
+       call user_get_log_var(UserScalar, 'usexuvbshd')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere,'(a,a,a)') 'AUXDATA UseXuvBodyShadow="', &
+            real2str(UserScalar,"f8.3"), '"'
+       call user_get_log_var(UserScalar, 'useheatsrc')
+       if(UserScalar > -7000.0) &
+            write(iUnitHere,'(a,a,a)') 'AUXDATA UseHeatingSource="', &
+            real2str(UserScalar,"f8.3"), '"'
     endif
 
     call test_stop(NameSub, DoTest)

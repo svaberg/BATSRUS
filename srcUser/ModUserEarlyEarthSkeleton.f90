@@ -1,10 +1,12 @@
 module ModUser
 
+  use BATL_lib, ONLY: test_start, test_stop
+
   use ModUserEmpty, ONLY: &
        user_set_boundary_cells, user_set_face_boundary, &
        user_set_cell_boundary, user_initial_perturbation, &
        user_set_ics, user_init_session, &
-       user_specify_region, user_amr_criteria, user_get_log_var, &
+       user_specify_region, user_amr_criteria, &
        user_calc_sources_impl, &
        user_init_point_implicit, user_get_b0, user_update_states, &
        user_calc_timestep, user_normalization, user_io_units, &
@@ -16,19 +18,15 @@ module ModUser
   character(len=*), parameter :: NameUserModule = 'EARLY EARTH SKELETON (EMPTY HOOKS)'
 
   real :: XuvSigmaSi = 1.0e-22
-  real :: XuvNeutralMinSi = 0.0
-  integer :: XuvOctreeMaxIter = 12
+  integer :: XuvMaxIter = 12
   logical :: UseXuv = .false.
   logical :: UseXuvBodyShadow = .true.
   logical :: UseHeatingSource = .true.
-  real :: XuvFluxSi = 4.0
-  logical :: UseTauDebugLog = .true.
-  integer :: nTauUpdateCall = 0
-  integer :: nTauUpdateCompute = 0
+  real :: XuvFluxSi = 4.64e-3
 
-  logical :: IsTauOctreeReady = .false.
-  integer :: nStepTauOctree = -1
-  real, allocatable :: TauOctree_GB(:,:,:,:)
+  logical :: IsTauXuvReady = .false.
+  integer :: nStepTauXuv = -1
+  real, allocatable :: TauXuv_GB(:,:,:,:)
   real, allocatable :: XuvHeat_GB(:,:,:,:)
 
 contains
@@ -49,9 +47,8 @@ contains
        case('#EARTHXUV')
           call read_var('UseXuv', UseXuv)
           if(UseXuv) then
-             call read_var('XuvSigmaSi', XuvSigmaSi)
-             call read_var('XuvNeutralMinSi', XuvNeutralMinSi)
              call read_var('XuvFluxSi', XuvFluxSi)
+             call read_var('XuvSigmaSi', XuvSigmaSi)
           end if
        case('#EARTHXUVSWITCH')
           call read_var('UseXuvBodyShadow', UseXuvBodyShadow)
@@ -75,12 +72,16 @@ contains
 
     select case(trim(NameAction))
     case('initial condition done')
-       call update_tauxuv_octree
+       call timing_start('xuv_user_action')
+       call update_tauxuv
+       call timing_stop('xuv_user_action')
     case('timestep done')
-       call update_tauxuv_octree
+       call timing_start('xuv_user_action')
+       call update_tauxuv
+       call timing_stop('xuv_user_action')
     case('load balance done')
-       IsTauOctreeReady = .false.
-       nStepTauOctree = -1
+       IsTauXuvReady = .false.
+       nStepTauXuv = -1
     case default
        ! No action needed.
     end select
@@ -105,15 +106,15 @@ contains
     logical,          intent(out)   :: IsFound
 
     select case(NameVar)
-    case('tauxuv')
-       if(allocated(TauOctree_GB)) then
-          PlotVar_G = TauOctree_GB(:,:,:,iBlock)
+    case('xuvtau','tauxuv')
+       if(allocated(TauXuv_GB)) then
+          PlotVar_G = TauXuv_GB(:,:,:,iBlock)
        else
           PlotVar_G = 0.0
        end if
        PlotVarBody = 0.0
        UsePlotVarBody = .false.
-       NameTecVar = 'TAUXUV'
+       NameTecVar = 'XUVTAU'
        NameTecUnit = '[none]'
        NameIdlUnit = 'none'
        IsFound = .true.
@@ -137,6 +138,29 @@ contains
 
   end subroutine user_set_plot_var
 
+  subroutine user_get_log_var(VarValue, NameVar, Radius)
+
+    real, intent(out)            :: VarValue
+    character(len=*), intent(in) :: NameVar
+    real, intent(in), optional   :: Radius
+
+    select case(trim(NameVar))
+    case('usexuv')
+       VarValue = merge(1.0, 0.0, UseXuv)
+    case('xuvfluxsi')
+       VarValue = XuvFluxSi
+    case('xuvsigmasi')
+       VarValue = XuvSigmaSi
+    case('usexuvbshd')
+       VarValue = merge(1.0, 0.0, UseXuvBodyShadow)
+    case('useheatsrc')
+       VarValue = merge(1.0, 0.0, UseHeatingSource)
+    case default
+       VarValue = -7777.0
+    end select
+
+  end subroutine user_get_log_var
+
   subroutine user_calc_sources_expl(iBlock)
 
     use BATL_lib, ONLY: nI, nJ, nK, Used_GB
@@ -148,87 +172,89 @@ contains
     integer, intent(in) :: iBlock
     integer :: i, j, k
     real :: HeatRateNo
+    logical :: DoTest
+    character(len=*), parameter :: NameSub = 'user_calc_sources_expl'
 
-    if(.not.UseHeatingSource) RETURN
-    if(.not.UseXuv) RETURN
-    if(.not.allocated(XuvHeat_GB)) RETURN
+    call test_start(NameSub, DoTest)
+    call timing_start('xuv_src_hook')
 
-    do k = 1, nK; do j = 1, nJ; do i = 1, nI
-       if(.not.Used_GB(i,j,k,iBlock)) CYCLE
+    if(UseHeatingSource .and. UseXuv .and. allocated(XuvHeat_GB)) then
+       call timing_start('xuv_heat_src')
+       do k = 1, nK; do j = 1, nJ; do i = 1, nI
+          if(.not.Used_GB(i,j,k,iBlock)) CYCLE
 
-       HeatRateNo = XuvHeat_GB(i,j,k,iBlock) * &
-            Si2No_V(UnitEnergyDens_) / Si2No_V(UnitT_)
+          ! Volumetric XUV heating Q [W/m^3] from Beer-Lambert attenuation.
+          HeatRateNo = XuvHeat_GB(i,j,k,iBlock) * &
+               Si2No_V(UnitEnergyDens_) / Si2No_V(UnitT_)
 
-       if(UseNonConservative .and. &
-            .not.(nConservCrit > 0 .and. IsConserv_CB(i,j,k,iBlock))) then
-          Source_VC(p_,i,j,k) = Source_VC(p_,i,j,k) + GammaMinus1*HeatRateNo
-       else
-          Source_VC(Energy_,i,j,k) = Source_VC(Energy_,i,j,k) + HeatRateNo
-       end if
-    end do; end do; end do
+          ! In non-conservative cells BATSRUS advances pressure directly:
+          ! dp/dt = (gamma-1)Q. Conservative cells use dE/dt = Q.
+          if(UseNonConservative .and. &
+               .not.(nConservCrit > 0 .and. IsConserv_CB(i,j,k,iBlock))) then
+             Source_VC(p_,i,j,k) = Source_VC(p_,i,j,k) + GammaMinus1*HeatRateNo
+          else
+             Source_VC(Energy_,i,j,k) = Source_VC(Energy_,i,j,k) + HeatRateNo
+          end if
+       end do; end do; end do
+       call timing_stop('xuv_heat_src')
+    end if
+
+    call timing_stop('xuv_src_hook')
+    call test_stop(NameSub, DoTest)
 
   end subroutine user_calc_sources_expl
 
-  subroutine update_tauxuv_octree
+  subroutine update_tauxuv
 
     use BATL_lib, ONLY: nI, nJ, nK, MinI, MaxI, MinJ, MaxJ, MinK, MaxK, &
          MaxBlock, nBlock, Unused_B, Xyz_DGB, CellSize_DB, CoordMax_D, &
-         message_pass_cell, iProc
+         message_pass_cell
     use ModMain, ONLY: nStep, UseBody
     use ModPhysics, ONLY: No2Si_V, UnitX_, UnitRho_, rBody
     use ModAdvance, ONLY: State_VGB
     use ModVarIndexes, ONLY: Rho_
     use ModConst, ONLY: cProtonMass
-    use ModIO, ONLY: write_prefix, iUnitOut
 
     integer :: iBlock, i, j, k, iIter
     real :: XSi, YSi, ZSi, DxSi, TauUp, TauNew, TauOld, TauDiffMax, NeutralProxySi
     real :: XFaceRightSi, SigmaNdx, FluxInSi, AbsFrac
     real :: RBodySi, RPerp2Si, XOCCSi
     logical :: IsShadowed
+    logical :: DoTest
+    character(len=*), parameter :: NameSub = 'update_tauxuv'
     real, parameter :: Small = 1.0e-30
     real, parameter :: TauMinOut = 1.0e-80
     real, parameter :: TauTol = 1.0e-12
 
-    nTauUpdateCall = nTauUpdateCall + 1
+    call test_start(NameSub, DoTest)
 
-    if(IsTauOctreeReady .and. nStepTauOctree == nStep) then
+    if(IsTauXuvReady .and. nStepTauXuv == nStep) then
+       call test_stop(NameSub, DoTest)
        RETURN
     end if
 
-    nTauUpdateCompute = nTauUpdateCompute + 1
-    if(UseTauDebugLog .and. iProc == 0) then
-       call write_prefix
-       write(iUnitOut,'(a,i8,a,i8,a,i8)') &
-            'EARLYEARTH DEBUG: entering update_tauxuv_octree at nStep=', &
-            nStep, ', call=', nTauUpdateCall, ', compute=', nTauUpdateCompute
-    end if
-
-    if(.not.allocated(TauOctree_GB)) then
-      allocate(TauOctree_GB(MinI:MaxI,MinJ:MaxJ,MinK:MaxK,MaxBlock))
+    if(.not.allocated(TauXuv_GB)) then
+      allocate(TauXuv_GB(MinI:MaxI,MinJ:MaxJ,MinK:MaxK,MaxBlock))
     end if
     if(.not.allocated(XuvHeat_GB)) then
       allocate(XuvHeat_GB(MinI:MaxI,MinJ:MaxJ,MinK:MaxK,MaxBlock))
     end if
 
     if(.not.UseXuv) then
-       TauOctree_GB = 0.0
+       TauXuv_GB = 0.0
        XuvHeat_GB = 0.0
-       IsTauOctreeReady = .true.
-       nStepTauOctree = nStep
-       if(UseTauDebugLog .and. iProc == 0) then
-          call write_prefix
-          write(iUnitOut,'(a,i8)') &
-               'EARLYEARTH DEBUG: update_tauxuv_octree disabled, nStep=', nStep
-       end if
+       IsTauXuvReady = .true.
+       nStepTauXuv = nStep
+       call test_stop(NameSub, DoTest)
        RETURN
     end if
 
-    TauOctree_GB = 0.0
+    call timing_start('xuv_tau_update')
+    TauXuv_GB = 0.0
     XuvHeat_GB = 0.0
 
-    do iIter = 1, max(1, XuvOctreeMaxIter)
-       call message_pass_cell(TauOctree_GB, nWidthIn=1, nProlongOrderIn=1)
+    do iIter = 1, max(1, XuvMaxIter)
+       call message_pass_cell(TauXuv_GB, nWidthIn=1, nProlongOrderIn=1)
        TauDiffMax = 0.0
 
        do iBlock = 1, nBlock
@@ -246,17 +272,18 @@ contains
                    if(XFaceRightSi >= CoordMax_D(1)*No2Si_V(UnitX_) - 10.0*Small) then
                       TauUp = 0.0
                    else
-                      TauUp = max(0.0, TauOctree_GB(i+1,j,k,iBlock))
+                      TauUp = max(0.0, TauXuv_GB(i+1,j,k,iBlock))
                    end if
 
-                   TauOld = TauOctree_GB(i,j,k,iBlock)
+                   TauOld = TauXuv_GB(i,j,k,iBlock)
                    NeutralProxySi = max(0.0, &
                         State_VGB(Rho_,i,j,k,iBlock)*No2Si_V(UnitRho_)/cProtonMass)
-                   NeutralProxySi = max(NeutralProxySi, XuvNeutralMinSi)
+                   ! Optical depth increment for one cell:
+                   ! dTau = sigma * n * ds, with n approximated by rho/mp.
                    SigmaNdx = XuvSigmaSi*NeutralProxySi*DxSi
                    TauNew = TauUp + SigmaNdx
                    if(abs(TauNew) < TauMinOut) TauNew = 0.0
-                   TauOctree_GB(i,j,k,iBlock) = TauNew
+                   TauXuv_GB(i,j,k,iBlock) = TauNew
                    TauDiffMax = max(TauDiffMax, abs(TauNew - TauOld))
 
                    IsShadowed = .false.
@@ -271,6 +298,8 @@ contains
                    if(IsShadowed) then
                       XuvHeat_GB(i,j,k,iBlock) = 0.0
                    else
+                      ! Beer-Lambert attenuation and absorbed power:
+                      ! F_in = F0*exp(-Tau_up), AbsFrac = 1-exp(-dTau), Q = F_in*AbsFrac/ds.
                       FluxInSi = XuvFluxSi*exp(-TauUp)
                       AbsFrac = 1.0 - exp(-SigmaNdx)
                       XuvHeat_GB(i,j,k,iBlock) = FluxInSi*AbsFrac/max(DxSi, Small)
@@ -285,17 +314,12 @@ contains
        if(TauDiffMax < TauTol) EXIT
     end do
 
-    IsTauOctreeReady = .true.
-    nStepTauOctree = nStep
+    call timing_stop('xuv_tau_update')
+    IsTauXuvReady = .true.
+    nStepTauXuv = nStep
 
-    if(UseTauDebugLog .and. iProc == 0) then
-       call write_prefix
-       write(iUnitOut,'(a,i8,a,1pe12.4,a,i8,a,i8)') &
-            'EARLYEARTH DEBUG: exiting update_tauxuv_octree at nStep=', &
-            nStep, ', TauDiffMax=', TauDiffMax, &
-            ', call=', nTauUpdateCall, ', compute=', nTauUpdateCompute
-    end if
+    call test_stop(NameSub, DoTest)
 
-  end subroutine update_tauxuv_octree
+  end subroutine update_tauxuv
 
 end module ModUser
