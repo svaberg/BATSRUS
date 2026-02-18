@@ -1,0 +1,165 @@
+#DESCRIPTION
+Param/EARLYEARTH/PARAM.in.mhd.restartsave: Stage-1 run to produce restart at n=4000		StringDescription
+
+#UPDATE
+slow			TypeUpdate
+
+#PROLONGATION
+2			nOrderProlong
+
+#TIMING
+T			UseTiming
+-1			DnTiming
+-1			nDepthTiming
+cumu			TypeTimingReport
+
+#STARTTIME
+1998			iYear
+5			iMonth
+5			iDay
+0			iHour
+0			iMinute
+0			iSecond
+
+#DIPOLE
+-3.11e-5		DipoleStrengthSi [T]
+
+#MAGNETICAXIS
+T			IsMagAxisPrimary
+11.0			MagAxisTheta [degree]
+289.1			MagAxisPhi [degree]
+
+#SOLARWINDFILE
+T			UseSolarWindFile
+Param/EARTH/imf19980504.dat		NameSolarWindFile
+
+#UPDATEB0
+0.5			DtUpdateB0
+
+#BORIS
+T			UseBorisCorrection
+0.02			BorisClightFactor
+
+#MINIMUMPRESSURE
+1e-5			pMinDim [nPa]
+
+#MINIMUMDENSITY
+1e-2			RhoMinDim [amu/cc]
+
+#GRID
+1			nRootBlock1
+1			nRootBlock2
+1			nRootBlock3
+-224.			xMin
+ 32.			xMax
+-128.			yMin
+ 128.			yMax
+-128.			zMin
+ 128.			zMax
+
+#GRIDRESOLUTION
+1./4			Resolution
+initial			StringShape
+
+#GRIDRESOLUTION
+8.0			Resolution
+all			StringShape
+
+#GRIDRESOLUTION
+1.0			Resolution
+box			StringShape
+ -5.0			xMinBox
+ -20.0			yMinBox
+ -10.0			zMinBox
+  5.0			xMaxBox
+  20.0			yMaxBox
+  10.0			zMaxBox
+
+#GRIDRESOLUTION
+1./4			Resolution
+shell0			StringShape
+2.5			RadiusInner
+3.5			Radius
+
+#GRIDBLOCKALL
+600			MaxBlock
+
+#MAGNETOSPHERE
+T			UseBody
+2.5			rBody
+3.5			rCurrents
+8.0			BodyNDim (/ccm)
+2.5e4			BodyTDim (K)
+
+#CONSERVATIVECRITERIA
+1			nConservCrit
+parabola		TypeConservCrit
+ 6.0			xParabolaConserv
+15.0			yParabolaConserv
+
+#OUTERBOUNDARY
+float			TypeBc1
+vary			TypeBc2
+float			TypeBc3
+float			TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#INNERBOUNDARY
+ionosphere		TypeBcBody
+
+#SCHEME
+2			nOrder
+Linde			TypeFlux
+mc3			TypeLimiter
+1.2			LimiterBeta
+
+#TIMESTEPPING
+2			nStage
+0.60			CflExpl
+
+#SAVERESTART
+T			DoSaveRestart
+4000			DnSaveRestart
+-1.0			DtSaveRestart
+
+#RESTARTOUTFILE
+procseries		StringRestartOutFile
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVEPLOT
+3			nPlotFile
+y=0 VAR tec		StringPlot
+200			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat	NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc		NamePars
+z=0 VAR tec		StringPlot
+1000			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat	NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc		NamePars
+3d VAR tec		StringPlot
+1000			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat	NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc		NamePars
+
+#SAVELOGFILE
+T			DoSaveLogfile
+VAR			StringLog
+400			DnSaveLogfile
+-1.0			DtSaveLogfile
+dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status		NameLogVars
+
+#TIMEACCURATE
+F			IsTimeAccurate
+
+#USERSWITCH
++source			StringSwitch
+
+#STOP
+4000			MaxIteration
+-1.0			tSimulationMax

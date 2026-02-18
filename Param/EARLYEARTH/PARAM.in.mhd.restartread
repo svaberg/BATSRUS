@@ -1,0 +1,70 @@
+#INCLUDE
+Param/EARLYEARTH/PARAM.in.mhd.restartsave
+
+#DESCRIPTION
+Param/EARLYEARTH/PARAM.in.mhd.restartread: Stage-2 continuation based on restartsave baseline		StringDescription
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVERESTART
+T			DoSaveRestart
+400			DnSaveRestart
+-1.0			DtSaveRestart
+
+#SAVEPLOT
+3			nPlotFile
+y=0 VAR tec		StringPlot
+20			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat		NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc		NamePars
+z=0 VAR tec		StringPlot
+100			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat		NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc		NamePars
+3d VAR tec		StringPlot
+100			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat		NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc		NamePars
+
+#SAVELOGFILE
+T			DoSaveLogfile
+VAR			StringLog
+40			DnSaveLogfile
+-1.0			DtSaveLogfile
+dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status		NameLogVars
+
+#RUN ##########################################################################
+
+#USERINPUTBEGIN -----------------------------------
+#EARTHXUV
+F			UseXuv
+
+#EARTHXUVSWITCH
+T			UseXuvBodyShadow
+T			UseHeatingSource [TBD remove: redundant with #USERSWITCH +source]
+#USERINPUTEND -------------------------------------
+
+#STOP
+4400			MaxIteration
+-1.0			tSimulationMax
+
+#RUN ##########################################################################
+
+#USERINPUTBEGIN -----------------------------------
+#EARTHXUV
+T			UseXuv
+4.64e1			XuvFluxSi [W/m^2, integrated XUV at source boundary; 10000x]
+1.0e-22			XuvSigmaSi [m^2, effective absorber cross section]
+
+#EARTHXUVSWITCH
+T			UseXuvBodyShadow
+T			UseHeatingSource [TBD remove: redundant with #USERSWITCH +source]
+#USERINPUTEND -------------------------------------
+
+#STOP
+4800			MaxIteration
+-1.0			tSimulationMax
