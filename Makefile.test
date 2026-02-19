@@ -71,16 +71,16 @@ test_help:
 	@echo "    test_shockramp             (run shockramp test)"
 	@echo "    test_shockround            (run shocktube test on roundcube)"
 	@echo "    test_shocktube             (run shocktube test)"
-	@echo "    test_earlyearth_skeleton   (run early earth skeleton module test)"
-	@echo "    test_earlyearth_skeleton_compile (compile early earth skeleton test)"
-	@echo "    test_earlyearth_skeleton_rundir  (create run directory for early earth skeleton test)"
-	@echo "    test_earlyearth_skeleton_run     (run early earth skeleton test)"
-	@echo "    test_earlyearth_skeleton_check   (check early earth skeleton test against reference)"
-	@echo "    test_earlyearth_mhd        (run early earth pure-MHD baseline test)"
-	@echo "    test_earlyearth_mhd_compile (compile early earth pure-MHD baseline test)"
-	@echo "    test_earlyearth_mhd_rundir  (create run directory for early earth pure-MHD test)"
-	@echo "    test_earlyearth_mhd_run     (run early earth pure-MHD baseline test)"
-	@echo "    test_earlyearth_mhd_check   (check early earth pure-MHD output sanity)"
+	@echo "    test_earthxuv_neutrals   (run earth xuv neutrals module test)"
+	@echo "    test_earthxuv_neutrals_compile (compile earth xuv neutrals test)"
+	@echo "    test_earthxuv_neutrals_rundir  (create run directory for earth xuv neutrals test)"
+	@echo "    test_earthxuv_neutrals_run     (run earth xuv neutrals test)"
+	@echo "    test_earthxuv_neutrals_check   (check earth xuv neutrals test against reference)"
+	@echo "    test_earthxuv_mhd        (run earth xuv MHD+XUV baseline test)"
+	@echo "    test_earthxuv_mhd_compile (compile earth xuv MHD+XUV baseline test)"
+	@echo "    test_earthxuv_mhd_rundir  (create run directory for earth xuv MHD+XUV test)"
+	@echo "    test_earthxuv_mhd_run     (run earth xuv MHD+XUV baseline test)"
+	@echo "    test_earthxuv_mhd_check   (check earth xuv MHD+XUV output sanity)"
 	@echo "    test_shocktube_1d          (run 1D shocktube test on GPU)"
 	@echo "    test_stitch                (run STITCH test)"
 	@echo "    test_timewarp_1d           (run 1D time warp test)"
@@ -280,74 +280,74 @@ test_shocktube_check:
 
 ### EARLY EARTH SKELETON TEST ###
 
-test_earlyearth: test_earlyearth_mhd
+test_earthxuv: test_earthxuv_mhd
 
-test_earlyearth_skeleton:
-	touch test_earlyearth_skeleton.diff
-	@echo "test_earlyearth_skeleton_compile..." > test_earlyearth_skeleton.diff
-	$(MAKE) test_earlyearth_skeleton_compile
-	@echo "test_earlyearth_skeleton_rundir..." > test_earlyearth_skeleton.diff
-	$(MAKE) test_earlyearth_skeleton_rundir
-	@echo "test_earlyearth_skeleton_run..." > test_earlyearth_skeleton.diff
-	$(MAKE) test_earlyearth_skeleton_run
-	@echo "test_earlyearth_skeleton_check..." > test_earlyearth_skeleton.diff
-	$(MAKE) test_earlyearth_skeleton_check
+test_earthxuv_neutrals:
+	touch test_earthxuv_neutrals.diff
+	@echo "test_earthxuv_neutrals_compile..." > test_earthxuv_neutrals.diff
+	$(MAKE) test_earthxuv_neutrals_compile
+	@echo "test_earthxuv_neutrals_rundir..." > test_earthxuv_neutrals.diff
+	$(MAKE) test_earthxuv_neutrals_rundir
+	@echo "test_earthxuv_neutrals_run..." > test_earthxuv_neutrals.diff
+	$(MAKE) test_earthxuv_neutrals_run
+	@echo "test_earthxuv_neutrals_check..." > test_earthxuv_neutrals.diff
+	$(MAKE) test_earthxuv_neutrals_check
 
-test_earlyearth_skeleton_compile:
+test_earthxuv_neutrals_compile:
 	./Config.pl -default -e=MhdHyp -u=EarlyEarthSkeleton -ng=2 -g=64,4,1
 	$(MAKE) BATSRUS
 	make PIDL
 
-test_earlyearth_skeleton_rundir: test_rundir
+test_earthxuv_neutrals_rundir: test_rundir
 	cd ${TESTDIR}; cp Param/EARLYEARTH/PARAM.in PARAM.in
 	-./TestParam.pl -F ${TESTDIR}/PARAM.in
 
-test_earlyearth_skeleton_run:
+test_earthxuv_neutrals_run:
 	cd ${TESTDIR}; ${MPIRUN} ./BATSRUS.exe > runlog
 	cd ${TESTDIR}; ./PostProc.pl -m -replace RESULT
 
-test_earlyearth_skeleton_check:
+test_earthxuv_neutrals_check:
 	-@(${DIFFNUM} -t -r=1e-5 -a=1e-11 \
 		${TESTDIR}/RESULT/GM/1d_*t25.6*.out \
 		Param/EARLYEARTH/TestOutput/mhdhyp_ref.out \
-		> test_earlyearth_skeleton.diff)
-	ls -l test_earlyearth_skeleton.diff
+		> test_earthxuv_neutrals.diff)
+	ls -l test_earthxuv_neutrals.diff
 
-### EARLY EARTH PURE MHD BASELINE ###
+### EARTHXUV MHD BASELINE ###
 
-test_earlyearth_mhd:
-	touch test_earlyearth_mhd.diff
-	@echo "test_earlyearth_mhd_compile..." > test_earlyearth_mhd.diff
-	$(MAKE) test_earlyearth_mhd_compile
-	@echo "test_earlyearth_mhd_rundir..." > test_earlyearth_mhd.diff
-	$(MAKE) test_earlyearth_mhd_rundir
-	@echo "test_earlyearth_mhd_run..." > test_earlyearth_mhd.diff
-	$(MAKE) test_earlyearth_mhd_run
-	@echo "test_earlyearth_mhd_check..." > test_earlyearth_mhd.diff
-	$(MAKE) test_earlyearth_mhd_check
+test_earthxuv_mhd:
+	touch test_earthxuv_mhd.diff
+	@echo "test_earthxuv_mhd_compile..." > test_earthxuv_mhd.diff
+	$(MAKE) test_earthxuv_mhd_compile
+	@echo "test_earthxuv_mhd_rundir..." > test_earthxuv_mhd.diff
+	$(MAKE) test_earthxuv_mhd_rundir
+	@echo "test_earthxuv_mhd_run..." > test_earthxuv_mhd.diff
+	$(MAKE) test_earthxuv_mhd_run
+	@echo "test_earthxuv_mhd_check..." > test_earthxuv_mhd.diff
+	$(MAKE) test_earthxuv_mhd_check
 
-test_earlyearth_mhd_compile:
+test_earthxuv_mhd_compile:
 	./Config.pl -default -e=Mhd -u=EarlyEarthSkeleton -ng=2 -g=10,10,10
 	./Config.pl -opt=Param/EARLYEARTH/PARAM.in.mhd
 	$(MAKE) BATSRUS
 	make PIDL
 
-test_earlyearth_mhd_rundir: test_rundir
+test_earthxuv_mhd_rundir: test_rundir
 	cd ${TESTDIR}; cp Param/EARLYEARTH/PARAM.in.mhd PARAM.in
 	-./TestParam.pl -F ${TESTDIR}/PARAM.in
 
-test_earlyearth_mhd_run:
+test_earthxuv_mhd_run:
 	cd ${TESTDIR}; ${MPIRUN} ./BATSRUS.exe > runlog
 	cd ${TESTDIR}; ./PostProc.pl -m -replace RESULTS
 
-test_earlyearth_mhd_check:
+test_earthxuv_mhd_check:
 	@File=`ls ${TESTDIR}/RESULTS/GM/y=0_var_*t00000001*.out | head -1`; \
 	awk 'NR>5{if(n==0){rmin=rmax=$$3;bxmin=bxmax=$$5;n=1}; \
 	    if($$3<rmin)rmin=$$3; if($$3>rmax)rmax=$$3; \
 	    if($$5<bxmin)bxmin=$$5; if($$5>bxmax)bxmax=$$5} \
 	    END{printf("rho=[%g,%g] bx=[%g,%g]\n",rmin,rmax,bxmin,bxmax); \
-	    if(rmax-rmin < 0.5) exit 2}' $$File > test_earlyearth_mhd.diff
-	ls -l test_earlyearth_mhd.diff
+	    if(rmax-rmin < 0.5) exit 2}' $$File > test_earthxuv_mhd.diff
+	ls -l test_earthxuv_mhd.diff
 
 ### TIMEWARP SHOCK TUBE TEST ###
 
