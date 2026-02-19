@@ -16,8 +16,8 @@ our $Code = "BATSRUS";
 our $MakefileDefOrig = 'src/Makefile.def';
 our @Arguments = @ARGV;
 
-# Figure out remote git server
-my $remote = `git config remote.origin.url`; $remote =~ s/\/BATSRUS(.git)?\n//;
+# Figure out dependency remote (default upstream)
+my $remote = $ENV{BATSRUS_DEP_REMOTE} // "git\@github.com:SWMFsoftware";
 
 #print "remote=$remote SWMFsoftware=$SWMFsoftware\n";
 
