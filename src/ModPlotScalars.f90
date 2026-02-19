@@ -33,6 +33,7 @@ contains
     use ModMultiFluid, ONLY: nFluid, nIonFluid,MassFluid_I, ChargeIon_I
     use ModSatelliteFile, ONLY: nSatellite, NameSat_I, i_sat_for_name, &
          set_satellite_positions, XyzSat_DI
+    use ModUserInterface, ONLY: user_get_log_var
     use BATL_lib, ONLY: nRoot_D, nI, nJ, nK
     use ModUtilities, ONLY: split_string, lower_case
 
@@ -227,8 +228,10 @@ contains
           Param_I(iPar) = ChargeIon_I(nIonFluid)
        case default
           Param_I(iPar) = -7777.
-          if(iProc==0)write(*,*) NameSub, ' Error: unknown parameter name=',&
-               NameParam_I(iPar),' for iFile=',iFile
+          call user_get_log_var(Param_I(iPar), NameParam_I(iPar))
+          if(Param_I(iPar) == -7777.0 .and. iProc==0)write(*,*) NameSub, &
+               ' Error: unknown parameter name=', NameParam_I(iPar), &
+               ' for iFile=',iFile
        end select
     end do
 
