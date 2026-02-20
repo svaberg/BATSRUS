@@ -1,0 +1,211 @@
+#DESCRIPTION
+Param/EARLYEARTH/PARAM.neutrals.restartsave.in: Stage-1 run to produce restart for EarthXUV neutrals		StringDescription
+
+#UPDATE
+slow			TypeUpdate
+
+#PROLONGATION
+2			nOrderProlong
+
+#TIMING
+T			UseTiming
+-1			DnTiming
+-1			nDepthTiming
+cumu			TypeTimingReport
+
+#STARTTIME
+1998			iYear
+5			iMonth
+5			iDay
+0			iHour
+0			iMinute
+0			iSecond
+
+#DIPOLE
+-3.11e-5		DipoleStrengthSi [T]
+
+#MAGNETICAXIS
+T			IsMagAxisPrimary
+11.0			MagAxisTheta [degree]
+289.1			MagAxisPhi [degree]
+
+#SOLARWIND
+5.0			SwNDim [amu/cc]
+100000.0		SwTDim   [K]
+-400.0			SwUxDim  [km/s]
+0.0			SwUyDim  [km/s]
+0.0			SwUzDim  [km/s]
+0.0			SwBxDim  [nT]
+0.0			SwByDim  [nT]
+-5.0			SwBzDim  [nT]
+
+#MULTIION
+1.0e-6			LowDensityRatio [technical fallback; overwritten by NeutralFracWind in user module]
+1.0e-10			LowPressureRatio
+F			DoRestrictMultiIon
+
+#UPDATEB0
+0.5			DtUpdateB0
+
+#BORIS
+T			UseBorisCorrection
+0.02			BorisClightFactor
+
+#MINIMUMPRESSURE
+1e-5			pMinDim [nPa]
+
+#MINIMUMDENSITY
+1e-2			RhoMinDim [amu/cc]
+
+#GRID
+1			nRootBlock1
+1			nRootBlock2
+1			nRootBlock3
+-224.			xMin
+ 32.			xMax
+-128.			yMin
+ 128.			yMax
+-128.			zMin
+ 128.			zMax
+
+#GRIDRESOLUTION
+1./4			Resolution
+initial			StringShape
+
+#GRIDRESOLUTION
+8.0			Resolution
+all			StringShape
+
+#GRIDRESOLUTION
+1.0			Resolution
+box			StringShape
+ -5.0			xMinBox
+ -20.0			yMinBox
+ -10.0			zMinBox
+  5.0			xMaxBox
+  20.0			yMaxBox
+  10.0			zMaxBox
+
+#GRIDRESOLUTION
+1./4			Resolution
+shell0			StringShape
+2.5			RadiusInner
+3.5			Radius
+
+#GRIDBLOCKALL
+600			MaxBlock
+
+#MAGNETOSPHERE
+T			UseBody
+2.5			rBody
+3.5			rCurrents
+5.6			BodyNDim (/ccm) [Hp, placeholder; auto-synced from NeutralFracPlanet]
+2.4			BodyNDim (/ccm) [H, placeholder; auto-synced from NeutralFracPlanet]
+2.5e4			BodyTDim (K)
+
+#CONSERVATIVECRITERIA
+1			nConservCrit
+parabola		TypeConservCrit
+ 6.0			xParabolaConserv
+15.0			yParabolaConserv
+
+#OUTERBOUNDARY
+float			TypeBc1
+vary			TypeBc2
+float			TypeBc3
+float			TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#INNERBOUNDARY
+ionosphere		TypeBcBody
+
+#SCHEME
+2			nOrder
+Linde			TypeFlux
+mc3			TypeLimiter
+1.2			LimiterBeta
+
+#TIMESTEPPING
+2			nStage
+0.60			CflExpl
+
+#SAVERESTART
+T			DoSaveRestart
+400			DnSaveRestart
+-1.0			DtSaveRestart
+
+#RESTARTOUTFILE
+procseries		StringRestartOutFile
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVEPLOT
+3			nPlotFile
+y=0 VAR tec		StringPlot
+20			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat fneutral nh nhp ne		NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc useinitspeciesrho neutralfracwind neutralfracplanet neutralplanetscale neutralfracfloor useneutralchem usechemtauatt usechemenergy usechemlimiter usechemsub photoioncoeffsi recombcoeffsi chemenergyperionsi nchemsubstep		NamePars
+z=0 VAR tec		StringPlot
+100			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat fneutral nh nhp ne		NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc useinitspeciesrho neutralfracwind neutralfracplanet neutralplanetscale neutralfracfloor useneutralchem usechemtauatt usechemenergy usechemlimiter usechemsub photoioncoeffsi recombcoeffsi chemenergyperionsi nchemsubstep		NamePars
+3d VAR tec		StringPlot
+100			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat fneutral nh nhp ne		NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc useinitspeciesrho neutralfracwind neutralfracplanet neutralplanetscale neutralfracfloor useneutralchem usechemtauatt usechemenergy usechemlimiter usechemsub photoioncoeffsi recombcoeffsi chemenergyperionsi nchemsubstep		NamePars
+
+#SAVELOGFILE
+T			DoSaveLogfile
+VAR			StringLog
+40			DnSaveLogfile
+-1.0			DtSaveLogfile
+dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status		NameLogVars
+
+#TIMEACCURATE
+F			IsTimeAccurate
+
+#USERSWITCH
++source +ics		StringSwitch
+
+#USERINPUTBEGIN -----------------------------------
+#EARTHXUV
+F			UseXuv
+4.64e-3			XuvFluxSi [W/m^2, integrated XUV at source boundary]
+1.0e-22			XuvSigmaSi [m^2, effective absorber cross section]
+
+#EARTHXUVSWITCH
+T			UseXuvBodyShadow
+T			UseHeatingSource
+
+#EARTHXUVNEUTRALSWITCH
+T			UseInitSpeciesFromRho
+
+#EARTHXUVNEUTRALS
+0.10			NeutralFracWind [wind/far-field BC neutral fraction]
+0.30			NeutralFracPlanet [target neutral fraction near planet]
+40.0			NeutralPlanetScale [R, radial ramp length from rBody]
+1.0e-6			NeutralFracFloor [technical floor in calculations]
+1.0			NeutralFracMax
+
+#EARTHXUVNEUTRALCHEMSWITCH
+F			UseNeutralChem [optional H<->Hp chemistry source]
+T			UseChemTauAttenuation [scale photoionization with exp(-xuvtau) and body shadow]
+F			UseChemEnergyBookkeeping [optional chemistry energy bookkeeping in MHD energy]
+T			UseChemSourceLimiter [enforce nonnegative Hp/H after explicit source update]
+F			UseChemSubcycling [fixed explicit chemistry subcycling for stiff cells]
+
+#EARTHXUVNEUTRALCHEM
+1.0e-7			PhotoIonCoeffSi [1/s, unattenuated H photoionization frequency]
+2.6e-19			RecombCoeffSi [m^3/s, H+ + e -> H recombination coefficient]
+2.179872e-18		ChemEnergyPerIonSi [J, ionization potential used for net chemistry energy]
+4			nChemSubstep [integer, used when UseChemSubcycling=T]
+#USERINPUTEND -------------------------------------
+
+#STOP
+400			MaxIteration
+-1.0			tSimulationMax

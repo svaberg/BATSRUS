@@ -1,0 +1,117 @@
+#INCLUDE
+Param/EARLYEARTH/PARAM.neutrals.restartsave.in
+
+#DESCRIPTION
+Param/EARLYEARTH/PARAM.neutrals.restartread.in: Stage-2 continuation based on neutrals restartsave baseline	StringDescription
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVERESTART
+T			DoSaveRestart
+40			DnSaveRestart
+-1.0			DtSaveRestart
+
+#SAVEPLOT
+3			nPlotFile
+y=0 VAR tec		StringPlot
+10			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat fneutral nh nhp ne		NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc useinitspeciesrho neutralfracwind neutralfracplanet neutralplanetscale neutralfracfloor useneutralchem usechemtauatt usechemenergy usechemlimiter usechemsub photoioncoeffsi recombcoeffsi chemenergyperionsi nchemsubstep		NamePars
+z=0 VAR tec		StringPlot
+10			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat fneutral nh nhp ne		NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc useinitspeciesrho neutralfracwind neutralfracplanet neutralplanetscale neutralfracfloor useneutralchem usechemtauatt usechemenergy usechemlimiter usechemsub photoioncoeffsi recombcoeffsi chemenergyperionsi nchemsubstep		NamePars
+3d VAR tec		StringPlot
+10			DnSavePlot
+-1.0			DtSavePlot
+{MHD} xuvtau xuvheat fneutral nh nhp ne		NameVars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc useinitspeciesrho neutralfracwind neutralfracplanet neutralplanetscale neutralfracfloor useneutralchem usechemtauatt usechemenergy usechemlimiter usechemsub photoioncoeffsi recombcoeffsi chemenergyperionsi nchemsubstep		NamePars
+
+#SAVELOGFILE
+T			DoSaveLogfile
+VAR			StringLog
+10			DnSaveLogfile
+-1.0			DtSaveLogfile
+dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status		NameLogVars
+
+#DOAMR
+F			DoAmr
+
+#USERINPUTBEGIN -----------------------------------
+#EARTHXUV
+F			UseXuv
+
+#EARTHXUVSWITCH
+T			UseXuvBodyShadow
+T			UseHeatingSource
+
+#EARTHXUVNEUTRALSWITCH
+T			UseInitSpeciesFromRho
+
+#EARTHXUVNEUTRALS
+0.10			NeutralFracWind [wind/far-field BC neutral fraction]
+0.30			NeutralFracPlanet [target neutral fraction near planet]
+40.0			NeutralPlanetScale [R, radial ramp length from rBody]
+1.0e-6			NeutralFracFloor [technical floor in calculations]
+1.0			NeutralFracMax
+
+#EARTHXUVNEUTRALCHEMSWITCH
+F			UseNeutralChem [optional H<->Hp chemistry source]
+T			UseChemTauAttenuation [scale photoionization with exp(-xuvtau) and body shadow]
+F			UseChemEnergyBookkeeping [optional chemistry energy bookkeeping in MHD energy]
+T			UseChemSourceLimiter [enforce nonnegative Hp/H after explicit source update]
+F			UseChemSubcycling [fixed explicit chemistry subcycling for stiff cells]
+
+#EARTHXUVNEUTRALCHEM
+1.0e-7			PhotoIonCoeffSi [1/s, unattenuated H photoionization frequency]
+2.6e-19			RecombCoeffSi [m^3/s, H+ + e -> H recombination coefficient]
+2.179872e-18		ChemEnergyPerIonSi [J, ionization potential used for net chemistry energy]
+4			nChemSubstep [integer, used when UseChemSubcycling=T]
+#USERINPUTEND -------------------------------------
+
+#STOP
+100			MaxIteration
+-1.0			tSimulationMax
+
+#RUN ##########################################################################
+
+#USERINPUTBEGIN -----------------------------------
+#EARTHXUV
+T			UseXuv
+4.64e2			XuvFluxSi [W/m^2, integrated XUV at source boundary; 1e5 times modern Earth value]
+1.0e-22			XuvSigmaSi [m^2, effective absorber cross section]
+
+#EARTHXUVSWITCH
+T			UseXuvBodyShadow
+T			UseHeatingSource
+
+#EARTHXUVNEUTRALSWITCH
+T			UseInitSpeciesFromRho
+
+#EARTHXUVNEUTRALS
+0.10			NeutralFracWind [wind/far-field BC neutral fraction]
+0.30			NeutralFracPlanet [target neutral fraction near planet]
+40.0			NeutralPlanetScale [R, radial ramp length from rBody]
+1.0e-6			NeutralFracFloor [technical floor in calculations]
+1.0			NeutralFracMax
+
+#EARTHXUVNEUTRALCHEMSWITCH
+F			UseNeutralChem [optional H<->Hp chemistry source]
+T			UseChemTauAttenuation [scale photoionization with exp(-xuvtau) and body shadow]
+F			UseChemEnergyBookkeeping [optional chemistry energy bookkeeping in MHD energy]
+T			UseChemSourceLimiter [enforce nonnegative Hp/H after explicit source update]
+F			UseChemSubcycling [fixed explicit chemistry subcycling for stiff cells]
+
+#EARTHXUVNEUTRALCHEM
+1.0e-7			PhotoIonCoeffSi [1/s, unattenuated H photoionization frequency]
+2.6e-19			RecombCoeffSi [m^3/s, H+ + e -> H recombination coefficient]
+2.179872e-18		ChemEnergyPerIonSi [J, ionization potential used for net chemistry energy]
+4			nChemSubstep [integer, used when UseChemSubcycling=T]
+#USERINPUTEND -------------------------------------
+
+#STOP
+800			MaxIteration
+-1.0			tSimulationMax
