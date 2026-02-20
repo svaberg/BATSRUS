@@ -319,6 +319,8 @@ contains
 
   subroutine user_get_log_var(VarValue, NameVar, Radius)
 
+    use BATL_lib, ONLY: minval_grid, maxval_grid, nProc
+
     real, intent(out)            :: VarValue
     character(len=*), intent(in) :: NameVar
     real, intent(in), optional   :: Radius
@@ -364,6 +366,62 @@ contains
        VarValue = ChemEnergyPerIonSi
     case('nchemsubstep','nchemsub','nchemsubst')
        VarValue = real(nChemSubstep)
+    case('fneutralmin','fnmin')
+       call update_xuv_neutrals
+       if(allocated(NeutralFrac_GB)) then
+          VarValue = minval_grid(NeutralFrac_GB)/nProc
+       else
+          VarValue = NeutralFracInit/nProc
+       end if
+    case('fneutralmax','fnmax')
+       call update_xuv_neutrals
+       if(allocated(NeutralFrac_GB)) then
+          VarValue = maxval_grid(NeutralFrac_GB)/nProc
+       else
+          VarValue = NeutralFracInit/nProc
+       end if
+    case('nhmin')
+       call update_xuv_neutrals
+       if(allocated(Nh_GB)) then
+          VarValue = minval_grid(Nh_GB)/nProc
+       else
+          VarValue = 0.0
+       end if
+    case('nhmax')
+       call update_xuv_neutrals
+       if(allocated(Nh_GB)) then
+          VarValue = maxval_grid(Nh_GB)/nProc
+       else
+          VarValue = 0.0
+       end if
+    case('nhpmin')
+       call update_xuv_neutrals
+       if(allocated(Nhp_GB)) then
+          VarValue = minval_grid(Nhp_GB)/nProc
+       else
+          VarValue = 0.0
+       end if
+    case('nhpmax')
+       call update_xuv_neutrals
+       if(allocated(Nhp_GB)) then
+          VarValue = maxval_grid(Nhp_GB)/nProc
+       else
+          VarValue = 0.0
+       end if
+    case('xuvheatmin','xhmin')
+       call update_xuv_neutrals
+       if(allocated(XuvHeat_GB)) then
+          VarValue = minval_grid(XuvHeat_GB)/nProc
+       else
+          VarValue = 0.0
+       end if
+    case('xuvheatmax','xhmax')
+       call update_xuv_neutrals
+       if(allocated(XuvHeat_GB)) then
+          VarValue = maxval_grid(XuvHeat_GB)/nProc
+       else
+          VarValue = 0.0
+       end if
     case default
        VarValue = -7777.0
     end select

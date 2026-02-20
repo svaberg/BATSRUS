@@ -35,7 +35,7 @@ T			DoSaveLogfile
 VAR			StringLog
 10			DnSaveLogfile
 -1.0			DtSaveLogfile
-dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status		NameLogVars
+dt rho mx my mz p bx by bz pmin pmax dst lon1 lat1 lon2 lat2 status fneutralmin fneutralmax nhmin nhmax nhpmin nhpmax xuvheatmin xuvheatmax		NameLogVars
 
 #DOAMR
 F			DoAmr
