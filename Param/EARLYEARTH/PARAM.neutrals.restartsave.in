@@ -147,17 +147,17 @@ y=0 VAR tec		StringPlot
 20			DnSavePlot
 -1.0			DtSavePlot
 {MHD} xuvtau xuvheat fneutral nh nhp ne		NameVars
-{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc useinitspeciesrho neutralfracwind neutralfracplanet neutralplanetscale neutralfracfloor useneutralchem usechemtauatt usechemenergy usechemlimiter usechemsub photoioncoeffsi recombcoeffsi chemenergyperionsi nchemsubstep		NamePars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc initsprho nfrwind nfrplan nplscale nfrfloor usechem chmtauatt chmenergy chmlimit chemsub phioncoef recombcoef chemener nchemsub		NamePars
 z=0 VAR tec		StringPlot
 100			DnSavePlot
 -1.0			DtSavePlot
 {MHD} xuvtau xuvheat fneutral nh nhp ne		NameVars
-{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc useinitspeciesrho neutralfracwind neutralfracplanet neutralplanetscale neutralfracfloor useneutralchem usechemtauatt usechemenergy usechemlimiter usechemsub photoioncoeffsi recombcoeffsi chemenergyperionsi nchemsubstep		NamePars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc initsprho nfrwind nfrplan nplscale nfrfloor usechem chmtauatt chmenergy chmlimit chemsub phioncoef recombcoef chemener nchemsub		NamePars
 3d VAR tec		StringPlot
 100			DnSavePlot
 -1.0			DtSavePlot
 {MHD} xuvtau xuvheat fneutral nh nhp ne		NameVars
-{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc useinitspeciesrho neutralfracwind neutralfracplanet neutralplanetscale neutralfracfloor useneutralchem usechemtauatt usechemenergy usechemlimiter usechemsub photoioncoeffsi recombcoeffsi chemenergyperionsi nchemsubstep		NamePars
+{default} usexuv xuvfluxsi xuvsigmasi usexuvbshd useheatsrc initsprho nfrwind nfrplan nplscale nfrfloor usechem chmtauatt chmenergy chmlimit chemsub phioncoef recombcoef chemener nchemsub		NamePars
 
 #SAVELOGFILE
 T			DoSaveLogfile

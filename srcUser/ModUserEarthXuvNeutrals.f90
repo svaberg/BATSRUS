@@ -334,35 +334,35 @@ contains
        VarValue = merge(1.0, 0.0, UseXuvBodyShadow)
     case('useheatsrc')
        VarValue = merge(1.0, 0.0, UseHeatingSource)
-    case('useinitspeciesrho')
+    case('useinitspeciesrho','initsprho','useinitspe')
        VarValue = merge(1.0, 0.0, UseInitSpeciesFromRho)
-    case('neutralfracinit')
+    case('neutralfracinit','nfrinit')
        VarValue = NeutralFracInit
-    case('neutralfracwind')
+    case('neutralfracwind','nfrwind')
        VarValue = NeutralFracWind
-    case('neutralfracplanet')
+    case('neutralfracplanet','nfrplan')
        VarValue = NeutralFracPlanet
-    case('neutralplanetscale')
+    case('neutralplanetscale','nplscale','neutralpla')
        VarValue = NeutralPlanetScale
-    case('neutralfracfloor')
+    case('neutralfracfloor','nfrfloor')
        VarValue = NeutralFracFloor
-    case('useneutralchem')
+    case('useneutralchem','usechem','useneutral')
        VarValue = merge(1.0, 0.0, UseNeutralChem)
-    case('usechemtauatt')
+    case('usechemtauatt','chmtauatt','usechemtau')
        VarValue = merge(1.0, 0.0, UseChemTauAttenuation)
-    case('usechemenergy')
+    case('usechemenergy','chmenergy','usechemene')
        VarValue = merge(1.0, 0.0, UseChemEnergyBookkeeping)
-    case('usechemlimiter')
+    case('usechemlimiter','chmlimit','usechemlim')
        VarValue = merge(1.0, 0.0, UseChemSourceLimiter)
-    case('usechemsub')
+    case('usechemsub','chemsub')
        VarValue = merge(1.0, 0.0, UseChemSubcycling)
-    case('photoioncoeffsi')
+    case('photoioncoeffsi','phioncoef','photoionco')
        VarValue = PhotoIonCoeffSi
-    case('recombcoeffsi')
+    case('recombcoeffsi','recombcoef')
        VarValue = RecombCoeffSi
-    case('chemenergyperionsi')
+    case('chemenergyperionsi','chemener','chemenergy')
        VarValue = ChemEnergyPerIonSi
-    case('nchemsubstep')
+    case('nchemsubstep','nchemsub','nchemsubst')
        VarValue = real(nChemSubstep)
     case default
        VarValue = -7777.0
