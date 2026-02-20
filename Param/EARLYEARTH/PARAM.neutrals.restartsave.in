@@ -1,3 +1,36 @@
+  ---------------------------------------------------------------------------
+  EARTHXUV neutrals ramp-up guide (single-fluid MHD + Hp/H species diagnostics)
+ 
+  Purpose:
+  - This file is the baseline "restartsave" setup used to create a stable
+    restart state before stronger physics is enabled in restartread runs.
+ 
+  Where to edit user-physics switches:
+  - See the USERINPUTBEGIN command block near the end of this file.
+  - Main switches are:
+    UseXuv, UseHeatingSource, UseXuvBodyShadow,
+    UseNeutralChem, UseChemSourceLimiter, UseChemSubcycling,
+    UseChemEnergyBookkeeping.
+ 
+  Recommended stability ramp (sessions/restarts):
+  1) Hydro/MHD settle:
+     UseXuv=F, UseNeutralChem=F
+  2) XUV transport only (no energy source):
+     UseXuv=T, UseHeatingSource=F, UseXuvBodyShadow=F
+  3) Heating on:
+     UseHeatingSource=T, increase XuvFluxSi in steps across sessions
+  4) Chemistry on (after flow is stable):
+     UseNeutralChem=T, keep UseChemSourceLimiter=T
+     turn on UseChemSubcycling=T if explicit chemistry is stiff/noisy
+  5) Full energy bookkeeping (optional, last):
+     UseChemEnergyBookkeeping=T
+ 
+  Practical checks for each stage:
+  - Confirm runlog has no repeated timestep-collapse warnings.
+  - Track log diagnostics (fneutralmin/max, nhmin/max, nhpmin/max,
+    xuvheatmin/max) for smooth trends before moving to next stage.
+  ---------------------------------------------------------------------------
+
 #DESCRIPTION
 Param/EARLYEARTH/PARAM.neutrals.restartsave.in: Stage-1 run to produce restart for EarthXUV neutrals		StringDescription
 
