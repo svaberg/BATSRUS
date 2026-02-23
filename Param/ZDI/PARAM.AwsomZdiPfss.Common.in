@@ -91,6 +91,22 @@ none			TypeZdiRamp
 -1.0			ZdiRampStart
 -1.0			ZdiRampStop
 
+!#ZDISELFTEST
+!T			UseZdiSelfTest
+!Param/ZDI/ZDI.selftest.points.dat			NameZdiSelfTestPointFile
+!zdi_selftest_points.out			NameZdiSelfTestDumpFile
+!zdi_selftest_field_2d.out			NameZdiSelfTestImageFile
+!T			DoZdiSelfTestSingleCoeff
+!zdi_selftest_singlecoeff_points.out			NameZdiSelfTestCoeffDumpFile
+!zdi_selftest_singlecoeff			NameZdiSelfTestCoeffImagePrefix
+!2			ZdiSelfTestCoeffLmax
+!0.0			ZdiSelfTestLonMinDeg
+!360.0			ZdiSelfTestLonMaxDeg
+!30.0			ZdiSelfTestDLonDeg
+!-90.0			ZdiSelfTestLatMinDeg
+!90.0			ZdiSelfTestLatMaxDeg
+!15.0			ZdiSelfTestDLatDeg
+
 #USERINPUTEND -------------------------------------
 
 #TRANSITIONREGION
@@ -214,32 +230,7 @@ periodic		TypeBc6
 20.0			AccuracyFactorSquash
 
 #SAVEPLOT
-6			nPlotFile 1
-x=0 VAR idl		StringPlot
-20			DnSavePlot 5000
-10.0			DtSavePlot
--1.0			DxSavePlot
-rho ux uy uz ti bx by bz I01 I02 p		NameVars
-{default}		NamePars
-z=0 VAR idl		StringPlot
-20			DnSavePlot 5000
-10.0			DtSavePlot
--1.0			DxSavePlot
-rho ux uy uz ti bx by bz I01 I02 p		NameVars
-{default}		NamePars
-x=0 RAY idl		StringPlot
-20			DnSavePlot 5000
-10.0			DtSavePlot
--1.0			DxSavePlot
-y=0 RAY idl		StringPlot
-20			DnSavePlot 5000
-10.0			DtSavePlot
--1.0			DxSavePlot
-3d VAR tcp		StringPlot
-100			DnSavePlot
--1.			DtSavePlot
-rho ux uy uz ti bx by bz I01 I02 p		NameVars
-g rbody			NamePars
+3			nPlotFile 1
 shl VAR idl_ascii		StringPlot
 5			DnSavePlot
 -1.0			DtSavePlot
@@ -254,16 +245,15 @@ HGR			TypeCoordPlot
 10.0			dLat
 br bphi btheta		NameVars
 {default}		NamePars
-
-
-x=0 VAR tec		StringPlot
-10000			DnSavePlot
+z=0 VAR tec		StringPlot
+20			DnSavePlot
 -1.			DtSavePlot
+-1.0			DxSavePlot
 rho ux uy uz ti bx by bz I01 I02 p
 g rbody
 
-3d VAR tcp		StringPlot
-50000			DnSavePlot
+3d VAR tec		StringPlot
+100			DnSavePlot
 -1.			DtSavePlot
 rho ux uy uz ti bx by bz I01 I02 p
 g rbody
