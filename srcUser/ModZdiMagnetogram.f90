@@ -6,7 +6,7 @@ module ModZdiMagnetogram
 
   use ModIoUnit,    ONLY: io_unit_new
   use ModUtilities, ONLY: CON_stop, open_file, close_file
-  use ModNumConst,  ONLY: cHalfPi
+  use ModNumConst,  ONLY: cHalfPi, cPi
 
   implicit none
 
@@ -19,7 +19,17 @@ module ModZdiMagnetogram
   integer, public :: ZdiHeader_I(3) = 0
 
   ! Real and imaginary parts of the three ZDI coefficient sets:
-  ! 1=radial, 2=poloidal, 3=toroidal
+  ! 1=radial(alpha), 2=poloidal(beta), 3=toroidal(gamma)
+  !
+  ! Conventions (matched to ZDIpy/core/magneticGeom.py):
+  ! - Input is the Donati ZDI coefficient text format with 3 blocks.
+  ! - If header flag nPotential == -3 (third integer on line 2), we conjugate
+  !   alpha/beta/gamma after reading (same behavior as ZDIpy).
+  ! - eval_zdi_surface_field returns (Br, Bphi, Btheta) where theta is
+  !   co-latitude (southward). Therefore Blat = -Btheta.
+  ! - The spherical-harmonic normalization is
+  !     sqrt((2l+1)/(4*pi) * (l-m)!/(l+m)!)
+  !   and tangential terms include the standard /(l+1) factor.
   real, allocatable, public :: ZdiCoefRe_III(:,:,:)
   real, allocatable, public :: ZdiCoefIm_III(:,:,:)
 
@@ -27,6 +37,7 @@ module ModZdiMagnetogram
   public :: deallocate_zdi_coeff_arrays
   public :: zdi_is_loaded
   public :: eval_zdi_surface_field
+  public :: zdi_uses_donati_conjugation
 
 contains
   !============================================================================
@@ -110,6 +121,10 @@ contains
        end do
     end do
 
+    ! Donati "-3" files store the imaginary parts with the opposite sign
+    ! relative to the complex-product convention used in the field formulas.
+    if(zdi_uses_donati_conjugation()) ZdiCoefIm_III = -ZdiCoefIm_III
+
     ! Only blank lines are allowed after the coefficients.
     do
        read(iUnit, '(a)', iostat=iError) StringLine
@@ -147,6 +162,12 @@ contains
 
   end function zdi_is_loaded
   !============================================================================
+  logical function zdi_uses_donati_conjugation()
+    !--------------------------------------------------------------------------
+    zdi_uses_donati_conjugation = ZdiHeader_I(3) == -3
+
+  end function zdi_uses_donati_conjugation
+  !============================================================================
   subroutine eval_zdi_surface_field(Lon, Lat, Br, Bphi, Btheta, &
        BthetaPol, BphiPol, BthetaTor, BphiTor)
 
@@ -161,13 +182,14 @@ contains
     real    :: CosMLon, SinMLon
     real    :: AlphaRe, BetaRe, BetaIm, GammaRe, GammaIm
     real    :: aAlpha, aBeta, aGamma, iBeta, iGamma
-    real    :: P, dP, PoverSin, Fac
+    real    :: P, dP, PoverSin, NormLm, NormTang, MPoverSin
     real    :: BthetaPolLoc, BphiPolLoc, BthetaTorLoc, BphiTorLoc
 
     character(len=*), parameter :: NameSub = 'eval_zdi_surface_field'
     !--------------------------------------------------------------------------
     if(.not.zdi_is_loaded()) call CON_stop(NameSub//': ZDI coefficients not loaded')
 
+    ! Input uses latitude; internal formulas use co-latitude theta.
     Theta = cHalfPi - Lat
     SinTheta = sin(Theta)
     CosTheta = cos(Theta)
@@ -201,19 +223,21 @@ contains
           P  = P_II(l,m)
           dP = dPdTheta_II(l,m)
           PoverSin = P*InvSinTheta
+          NormLm   = zdi_norm_lm(l,m)
+          NormTang = NormLm/real(l+1)
+          MPoverSin = real(m)*PoverSin
 
-          ! "Raw" ZDI mode for plumbing/debugging: no coefficient normalization.
-          ! Keep the common 1/(l+1) factor in tangential components so the
-          ! relative poloidal/toroidal behavior is reasonable.
-          Fac = 1.0/real(l+1)
+          ! Matched to ZDIpy/core/magneticGeom.py:
+          !   Br    = Re(alpha*Y)
+          !   Bclat = -Re(beta*Z + gamma*X)
+          !   Blon  = -Re(beta*X - gamma*Z)
+          Br = Br + NormLm*aAlpha*P
 
-          Br = Br + aAlpha*P
+          BthetaPolLoc = BthetaPolLoc - NormTang*(aBeta*dP)
+          BphiPolLoc   = BphiPolLoc   - NormTang*(MPoverSin*iBeta)
 
-          BthetaPolLoc = BthetaPolLoc - Fac*(aBeta*dP)
-          BphiPolLoc   = BphiPolLoc   - Fac*(real(m)*iBeta*PoverSin)
-
-          BthetaTorLoc = BthetaTorLoc - Fac*(real(m)*iGamma*PoverSin)
-          BphiTorLoc   = BphiTorLoc   + Fac*(aGamma*dP)
+          BthetaTorLoc = BthetaTorLoc - NormTang*(MPoverSin*iGamma)
+          BphiTorLoc   = BphiTorLoc   + NormTang*(aGamma*dP)
        end do
     end do
 
@@ -273,6 +297,24 @@ contains
     end do
 
   end function zdi_order_from_ncoeff
+  !============================================================================
+  real function zdi_norm_lm(l, m)
+
+    integer, intent(in) :: l, m
+
+    integer :: i
+    real    :: FactorialRatio
+    !--------------------------------------------------------------------------
+    if(l < 0 .or. m < 0 .or. m > l) call CON_stop('zdi_norm_lm: bad (l,m)')
+
+    FactorialRatio = 1.0
+    do i = l - m + 1, l + m
+       FactorialRatio = FactorialRatio/real(i)
+    end do
+
+    zdi_norm_lm = sqrt((2.0*real(l) + 1.0)/(4.0*cPi) * FactorialRatio)
+
+  end function zdi_norm_lm
   !============================================================================
   subroutine calc_assoc_legendre_theta(Theta, P_II, dPdTheta_II)
 

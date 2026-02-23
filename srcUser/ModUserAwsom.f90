@@ -256,7 +256,8 @@ contains
          Si2No_V, UnitTemperature_, UnitN_, UnitB_, BodyNDim_I, BodyTDim_I, &
          UnitX_, UnitT_, Gamma, UnitEnergyDens_, UnitU_, Io2No_V
     use ModZdiMagnetogram, ONLY: read_zdi_coeff_file, zdi_is_loaded, &
-         nZdiOrder, nZdiCoeffPerSet, StringZdiHeader, ZdiHeader_I
+         zdi_uses_donati_conjugation, nZdiOrder, nZdiCoeffPerSet, &
+         StringZdiHeader, ZdiHeader_I
 
     real, parameter :: CoulombLog = 20.0
     real :: QparPerQtotal, QperpPerQtotal
@@ -378,6 +379,11 @@ contains
           call write_prefix; write(iUnitOut,*) 'ZDI ints: ', ZdiHeader_I
           call write_prefix; write(iUnitOut,*) 'ZDI order / coeff per set: ', &
                nZdiOrder, nZdiCoeffPerSet
+          call write_prefix; write(iUnitOut,*) &
+               'ZDI conventions: normalized Y/X/Z basis, Btheta=co-latitude, '//&
+               'Blat=-Btheta'
+          call write_prefix; write(iUnitOut,*) &
+               'ZDI Donati -3 conjugation applied = ', zdi_uses_donati_conjugation()
           call write_prefix; write(iUnitOut,*) 'ZDI scales (Io,No)=', &
                ZdiFieldScaleIo, ZdiFieldScaleNo
           call write_prefix; write(iUnitOut,*) 'ZDI lon shift [deg]=', ZdiLonShiftDeg
