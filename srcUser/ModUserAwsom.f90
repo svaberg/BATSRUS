@@ -111,7 +111,7 @@ contains
 
     character(len=100) :: NameCommand
     integer:: iDir
-    logical:: DoTest
+    logical:: DoTest, DoUseZdiBoundary
     character(len=*), parameter:: NameSub = 'user_read_inputs'
     !--------------------------------------------------------------------------
     call test_start(NameSub, DoTest)
@@ -263,7 +263,7 @@ contains
 
     real, parameter :: CoulombLog = 20.0
     real :: QparPerQtotal, QperpPerQtotal
-    logical:: DoTest
+    logical:: DoTest, DoUseZdiBoundary
     character(len=*), parameter:: NameSub = 'user_init_session'
     !--------------------------------------------------------------------------
     call test_start(NameSub, DoTest)
@@ -399,7 +399,8 @@ contains
             ', ramp=', trim(TypeZdiRamp), ', strength=', ZdiBcStrength, &
             ', scale=', ZdiBcScale
        call write_prefix; write(iUnitOut,*) &
-            'ZDI boundary radial component enabled = ', UseZdiBoundaryRadial
+            'ZDI Br is imposed when UseZdiBoundary=T; legacy radial flag = ', &
+            UseZdiBoundaryRadial
        call write_prefix; write(iUnitOut,*) 'ZDI ramp iter/time=', &
             ZdiRampIterStart, ZdiRampIterStop, ZdiRampStart, ZdiRampStop
     end if
@@ -1264,11 +1265,11 @@ contains
     real    :: U, Bdir_D(3)
     real    :: Gamma
     real    :: FrampZdi, MixZdi
-    real    :: ZdiBr, ZdiBphi, ZdiBtheta, rZdi, LonZdi, LatZdi
+    real    :: ZdiBr, ZdiBphi, ZdiBtheta, rZdi, LonZdi, LatZdi, LatZdiEval
     real    :: ZdiRlonLat_D(3), XyzRlonLat_DD(3,3)
     real    :: B1tTarget_D(3), B1Face_D(3), B1Target_D(3)
 
-    logical:: DoTest
+    logical:: DoTest, DoUseZdiBoundary
     character(len=*), parameter:: NameSub = 'user_set_cell_boundary'
     !--------------------------------------------------------------------------
     call test_start(NameSub, DoTest, iBlock)
@@ -1283,6 +1284,7 @@ contains
 
     FrampZdi = 0.0
     MixZdi   = 0.0
+    DoUseZdiBoundary = .false.
 
     if(UseAwsom)then
 
@@ -1305,7 +1307,8 @@ contains
        end select
 #endif
 
-       if(UseZdiBoundary .and. zdi_is_loaded())then
+       DoUseZdiBoundary = UseZdiBoundary .and. zdi_is_loaded()
+       if(DoUseZdiBoundary)then
           FrampZdi = 1.0
 
           if(ZdiRampIterStop > ZdiRampIterStart)then
@@ -1351,35 +1354,39 @@ contains
           Bt1_D = B1Face_D - Br1_D
 
 #ifndef _OPENACC
-          if(MixZdi > 0.0)then
+          if(DoUseZdiBoundary)then
              call xyz_to_rlonlat(Xyz_DGB(:,1,j,k,iBlock), rZdi, LonZdi, LatZdi)
              LonZdi = modulo(LonZdi - ZdiLonShift, cTwoPi)
-             call eval_zdi_surface_field(LonZdi, LatZdi, ZdiBr, ZdiBphi, ZdiBtheta)
+             ! Avoid exact pole singularities in tangential basis evaluation.
+             LatZdiEval = min(0.5*cPi - 1.0e-8, max(-0.5*cPi + 1.0e-8, LatZdi))
+             call eval_zdi_surface_field(LonZdi, LatZdiEval, ZdiBr, ZdiBphi, ZdiBtheta)
 
              ! ZDI evaluator returns (Br, Bphi, Btheta) with theta = co-latitude.
              ! rot_xyz_rlonlat uses (Br, BLon, BLat), so BLat = -Btheta.
-             ZdiRlonLat_D = [ZdiBcScale*ZdiFieldScaleNo*ZdiBr, &
-                  ZdiBcScale*ZdiFieldScaleNo*ZdiBphi, &
-                  -ZdiBcScale*ZdiFieldScaleNo*ZdiBtheta]
              XyzRlonLat_DD = rot_xyz_rlonlat(Xyz_DGB(:,1,j,k,iBlock))
-             B1Target_D = matmul(ZdiRlonLat_D, transpose(XyzRlonLat_DD))
-             B1Target_D = B1Target_D - B0_DGB(:,1,j,k,iBlock)
-
-             B1tTarget_D = B1Target_D - sum(B1Target_D*Runit_D)*Runit_D
-             if(UseZdiBoundaryRadial)then
-                B1Face_D = (1.0 - MixZdi)*B1Face_D + MixZdi*B1Target_D
-                Br1_D = sum(B1Face_D*Runit_D)*Runit_D
-                Bt1_D = B1Face_D - Br1_D
-             else
+             if(MixZdi > 0.0)then
+                ZdiRlonLat_D = [ZdiBcScale*ZdiFieldScaleNo*ZdiBr, &
+                     ZdiBcScale*ZdiFieldScaleNo*ZdiBphi, &
+                     -ZdiBcScale*ZdiFieldScaleNo*ZdiBtheta]
+                B1Target_D = matmul(ZdiRlonLat_D, transpose(XyzRlonLat_DD))
+                B1Target_D = B1Target_D - B0_DGB(:,1,j,k,iBlock)
+                Br1_D = sum(B1Target_D*Runit_D)*Runit_D
+                B1tTarget_D = B1Target_D - sum(B1Target_D*Runit_D)*Runit_D
                 Bt1_D = (1.0 - MixZdi)*Bt1_D + MixZdi*B1tTarget_D
+             else
+                ! Free tangential mode: impose only ZDI Br and leave Bt unchanged.
+                ZdiRlonLat_D = [ZdiBcScale*ZdiFieldScaleNo*ZdiBr, 0.0, 0.0]
+                B1Target_D = matmul(ZdiRlonLat_D, transpose(XyzRlonLat_DD))
+                B1Target_D = B1Target_D - B0_DGB(:,1,j,k,iBlock)
+                Br1_D = sum(B1Target_D*Runit_D)*Runit_D
              end if
           end if
 #endif
 
-          ! Default AWSoM inner BC keeps B1r=0. Experimental ZDI mode can also
-          ! impose a mixed radial component if UseZdiBoundaryRadial=T.
+          ! Default AWSoM inner BC keeps B1r=0. In ZDI BC mode, impose ZDI Br
+          ! and use TypeZdiBoundary only for the tangential components.
           do i = MinI, 0
-             if(UseZdiBoundaryRadial .and. MixZdi > 0.0)then
+             if(DoUseZdiBoundary)then
                 State_VGB(Bx_:Bz_,i,j,k,iBlock) = Br1_D + Bt1_D
              else
                 State_VGB(Bx_:Bz_,i,j,k,iBlock) = Bt1_D
