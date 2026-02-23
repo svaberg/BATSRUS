@@ -91,6 +91,7 @@ module ModUser
   real    :: ZdiLonShift = 0.0
 
   logical :: UseZdiBoundary = .false.
+  logical :: UseZdiBoundaryRadial = .false.
   character(len=20) :: TypeZdiBoundary = 'off'   ! off/clamp/nudge
   character(len=20) :: TypeZdiRamp = 'cosine'    ! none/linear/cosine
   real    :: ZdiBcStrength = 1.0
@@ -178,6 +179,7 @@ contains
        case('#ZDIBOUNDARY')
           call read_var('UseZdiBoundary', UseZdiBoundary)
           if(UseZdiBoundary)then
+             call read_var('UseZdiBoundaryRadial', UseZdiBoundaryRadial)
              call read_var('TypeZdiBoundary', TypeZdiBoundary)
              call read_var('TypeZdiRamp',     TypeZdiRamp)
              call read_var('ZdiBcStrength',   ZdiBcStrength)
@@ -396,6 +398,8 @@ contains
        call write_prefix; write(iUnitOut,*) 'ZDI boundary mode=', trim(TypeZdiBoundary), &
             ', ramp=', trim(TypeZdiRamp), ', strength=', ZdiBcStrength, &
             ', scale=', ZdiBcScale
+       call write_prefix; write(iUnitOut,*) &
+            'ZDI boundary radial component enabled = ', UseZdiBoundaryRadial
        call write_prefix; write(iUnitOut,*) 'ZDI ramp iter/time=', &
             ZdiRampIterStart, ZdiRampIterStop, ZdiRampStart, ZdiRampStop
     end if
@@ -1262,7 +1266,7 @@ contains
     real    :: FrampZdi, MixZdi
     real    :: ZdiBr, ZdiBphi, ZdiBtheta, rZdi, LonZdi, LatZdi
     real    :: ZdiRlonLat_D(3), XyzRlonLat_DD(3,3)
-    real    :: B0t_D(3), B1tTarget_D(3)
+    real    :: B1tTarget_D(3), B1Face_D(3), B1Target_D(3)
 
     logical:: DoTest
     character(len=*), parameter:: NameSub = 'user_set_cell_boundary'
@@ -1342,8 +1346,9 @@ contains
 
           Runit_D = Xyz_DGB(:,1,j,k,iBlock) / r_GB(1,j,k,iBlock)
 
-          Br1_D = sum(State_VGB(Bx_:Bz_,1,j,k,iBlock)*Runit_D)*Runit_D
-          Bt1_D = State_VGB(Bx_:Bz_,1,j,k,iBlock) - Br1_D
+          B1Face_D = State_VGB(Bx_:Bz_,1,j,k,iBlock)
+          Br1_D = sum(B1Face_D*Runit_D)*Runit_D
+          Bt1_D = B1Face_D - Br1_D
 
 #ifndef _OPENACC
           if(MixZdi > 0.0)then
@@ -1353,22 +1358,32 @@ contains
 
              ! ZDI evaluator returns (Br, Bphi, Btheta) with theta = co-latitude.
              ! rot_xyz_rlonlat uses (Br, BLon, BLat), so BLat = -Btheta.
-             ZdiRlonLat_D = [0.0, ZdiBcScale*ZdiFieldScaleNo*ZdiBphi, &
+             ZdiRlonLat_D = [ZdiBcScale*ZdiFieldScaleNo*ZdiBr, &
+                  ZdiBcScale*ZdiFieldScaleNo*ZdiBphi, &
                   -ZdiBcScale*ZdiFieldScaleNo*ZdiBtheta]
              XyzRlonLat_DD = rot_xyz_rlonlat(Xyz_DGB(:,1,j,k,iBlock))
-             B1tTarget_D = matmul(ZdiRlonLat_D, transpose(XyzRlonLat_DD))
+             B1Target_D = matmul(ZdiRlonLat_D, transpose(XyzRlonLat_DD))
+             B1Target_D = B1Target_D - B0_DGB(:,1,j,k,iBlock)
 
-             B0t_D = B0_DGB(:,1,j,k,iBlock) - &
-                  sum(B0_DGB(:,1,j,k,iBlock)*Runit_D)*Runit_D
-             B1tTarget_D = B1tTarget_D - B0t_D
-
-             Bt1_D = (1.0 - MixZdi)*Bt1_D + MixZdi*B1tTarget_D
+             B1tTarget_D = B1Target_D - sum(B1Target_D*Runit_D)*Runit_D
+             if(UseZdiBoundaryRadial)then
+                B1Face_D = (1.0 - MixZdi)*B1Face_D + MixZdi*B1Target_D
+                Br1_D = sum(B1Face_D*Runit_D)*Runit_D
+                Bt1_D = B1Face_D - Br1_D
+             else
+                Bt1_D = (1.0 - MixZdi)*Bt1_D + MixZdi*B1tTarget_D
+             end if
           end if
 #endif
 
-          ! Set B1r=0, and B1theta = B1theta(1) and B1phi = B1phi(1)
+          ! Default AWSoM inner BC keeps B1r=0. Experimental ZDI mode can also
+          ! impose a mixed radial component if UseZdiBoundaryRadial=T.
           do i = MinI, 0
-             State_VGB(Bx_:Bz_,i,j,k,iBlock) = Bt1_D
+             if(UseZdiBoundaryRadial .and. MixZdi > 0.0)then
+                State_VGB(Bx_:Bz_,i,j,k,iBlock) = Br1_D + Bt1_D
+             else
+                State_VGB(Bx_:Bz_,i,j,k,iBlock) = Bt1_D
+             end if
           end do
 
           do iFluid = 1, nFluid
