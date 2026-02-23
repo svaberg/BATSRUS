@@ -81,6 +81,24 @@ module ModUser
   ! 'bremsstrahlung' - emission due to the electron-ion collisions
 
   character(len=20):: TypeRadioEmission = 'simplistic'
+
+  ! Direct ZDI coefficient support (experimental, user-module path)
+  logical :: UseZdiMagnetogram = .false.
+  character(len=200) :: NameZdiCoeffFile = ''
+  real    :: ZdiFieldScaleIo = 1.0
+  real    :: ZdiFieldScaleNo = 1.0
+  real    :: ZdiLonShiftDeg = 0.0
+  real    :: ZdiLonShift = 0.0
+
+  logical :: UseZdiBoundary = .false.
+  character(len=20) :: TypeZdiBoundary = 'off'   ! off/clamp/nudge
+  character(len=20) :: TypeZdiRamp = 'cosine'    ! none/linear/cosine
+  real    :: ZdiBcStrength = 1.0
+  real    :: ZdiBcScale = 1.0
+  integer :: ZdiRampIterStart = 0
+  integer :: ZdiRampIterStop  = 0
+  real    :: ZdiRampStart = -1.0
+  real    :: ZdiRampStop  = -1.0
 contains
   !============================================================================
   subroutine user_read_inputs
@@ -149,6 +167,27 @@ contains
           call read_var('DoUpdateParkerJet', DoUpdateParkerJet)
           call read_var('BrampJet', BrampJet)
 
+       case('#ZDIMAGNETOGRAM')
+          call read_var('UseZdiMagnetogram', UseZdiMagnetogram)
+          if(UseZdiMagnetogram)then
+             call read_var('NameZdiCoeffFile', NameZdiCoeffFile)
+             call read_var('ZdiFieldScaleIo', ZdiFieldScaleIo)
+             call read_var('ZdiLonShiftDeg', ZdiLonShiftDeg)
+          end if
+
+       case('#ZDIBOUNDARY')
+          call read_var('UseZdiBoundary', UseZdiBoundary)
+          if(UseZdiBoundary)then
+             call read_var('TypeZdiBoundary', TypeZdiBoundary)
+             call read_var('TypeZdiRamp',     TypeZdiRamp)
+             call read_var('ZdiBcStrength',   ZdiBcStrength)
+             call read_var('ZdiBcScale',      ZdiBcScale)
+             call read_var('ZdiRampIterStart', ZdiRampIterStart)
+             call read_var('ZdiRampIterStop',  ZdiRampIterStop)
+             call read_var('ZdiRampStart',    ZdiRampStart)
+             call read_var('ZdiRampStop',     ZdiRampStop)
+          end if
+
        case("#STITCH")
           call read_var('ZetaSI', ZetaSI)
           call read_var('rStitch', rStitch)
@@ -208,13 +247,16 @@ contains
     use ModWaves, ONLY: UseWavePressure, UseAlfvenWaves
     use ModAdvance, ONLY: UseElectronPressure
     use ModVarIndexes, ONLY: WaveFirst_
+    use ModBatsrusUtility, ONLY: stop_mpi
     use ModMultiFluid, ONLY: MassIon_I
     use ModConst, ONLY: cElectronCharge, cLightSpeed, cBoltzmann, cEps, &
          cElectronMass
     use ModNumConst, ONLY: cTwoPi, cDegToRad
     use ModPhysics, ONLY: ElectronTemperatureRatio, AverageIonCharge, &
          Si2No_V, UnitTemperature_, UnitN_, UnitB_, BodyNDim_I, BodyTDim_I, &
-         UnitX_, UnitT_, Gamma, UnitEnergyDens_, UnitU_
+         UnitX_, UnitT_, Gamma, UnitEnergyDens_, UnitU_, Io2No_V
+    use ModZdiMagnetogram, ONLY: read_zdi_coeff_file, zdi_is_loaded, &
+         nZdiOrder, nZdiCoeffPerSet, StringZdiHeader, ZdiHeader_I
 
     real, parameter :: CoulombLog = 20.0
     real :: QparPerQtotal, QperpPerQtotal
@@ -257,6 +299,8 @@ contains
     BmaxJet = BmaxJetSi*Si2No_V(UnitB_)
     FlowSpeedJet = FlowSpeedJetSi &
          * Si2No_V(UnitX_)**2 / Si2No_V(UnitT_)/Si2No_V(UnitB_)
+    ZdiFieldScaleNo = ZdiFieldScaleIo*Io2No_V(UnitB_)
+    ZdiLonShift = ZdiLonShiftDeg*cDegToRad
 
     ! TeFraction is used for ideal EOS:
     if(UseElectronPressure)then
@@ -318,9 +362,36 @@ contains
        end if
     end if
     if(iProc == 0)then
+       if(UseZdiMagnetogram)then
+          call write_prefix; write(iUnitOut,*) &
+               'Reading ZDI coefficient file: ', trim(NameZdiCoeffFile)
+       end if
        call write_prefix; write(iUnitOut,*) ''
        call write_prefix; write(iUnitOut,*) 'user_init_session finished'
        call write_prefix; write(iUnitOut,*) ''
+    end if
+
+    if(UseZdiMagnetogram)then
+       call read_zdi_coeff_file(trim(NameZdiCoeffFile))
+       if(iProc == 0)then
+          call write_prefix; write(iUnitOut,*) 'ZDI header: ', trim(StringZdiHeader)
+          call write_prefix; write(iUnitOut,*) 'ZDI ints: ', ZdiHeader_I
+          call write_prefix; write(iUnitOut,*) 'ZDI order / coeff per set: ', &
+               nZdiOrder, nZdiCoeffPerSet
+          call write_prefix; write(iUnitOut,*) 'ZDI scales (Io,No)=', &
+               ZdiFieldScaleIo, ZdiFieldScaleNo
+          call write_prefix; write(iUnitOut,*) 'ZDI lon shift [deg]=', ZdiLonShiftDeg
+       end if
+    end if
+    if(UseZdiBoundary .and. .not.zdi_is_loaded()) then
+       call stop_mpi('UseZdiBoundary requires UseZdiMagnetogram and a valid file')
+    end if
+    if(UseZdiBoundary .and. iProc == 0)then
+       call write_prefix; write(iUnitOut,*) 'ZDI boundary mode=', trim(TypeZdiBoundary), &
+            ', ramp=', trim(TypeZdiRamp), ', strength=', ZdiBcStrength, &
+            ', scale=', ZdiBcScale
+       call write_prefix; write(iUnitOut,*) 'ZDI ramp iter/time=', &
+            ZdiRampIterStart, ZdiRampIterStop, ZdiRampStart, ZdiRampStop
     end if
 
     !$acc update device(tChromo, UseFloatRadialVelocity, ChromoN)
@@ -745,22 +816,26 @@ contains
     use ModCoronalHeating, ONLY: get_block_heating
     use ModTurbulence, ONLY: CoronalHeating_C, WaveDissipationRate_VC, &
          apportion_coronal_heating, get_wave_reflection
-    use ModPhysics, ONLY: No2Si_V, Si2No_V, UnitTemperature_, UnitT_, &
-         UnitN_, UnitEnergyDens_, CoulombLog, InvGammaMinus1
+    use ModPhysics, ONLY: No2Si_V, No2Io_V, Si2No_V, UnitTemperature_, UnitT_, &
+         UnitN_, UnitEnergyDens_, UnitB_, CoulombLog, InvGammaMinus1, &
+         NameIdlUnit_V
     use ModRadiativeCooling, ONLY: RadCooling_C, get_radiative_cooling
     use ModVarIndexes, ONLY: nVar, Rho_, p_, Pe_, WaveFirst_, WaveLast_, &
-         RhoUx_, RhoUz_, Ehot_
+         RhoUx_, RhoUz_, Bx_, By_, Bz_, Ehot_
     use ModFaceValue, ONLY: calc_face_value
-    use ModB0, ONLY: set_b0_face
+    use ModB0, ONLY: set_b0_face, B0_DGB, UseB0
     use ModMultiFluid, ONLY: nIonFluid
     use BATL_lib, ONLY: nDim, nG, MaxDim, FaceNormal_DDFB, CellVolume_GB, &
          Xyz_DGB, Used_GB
     use ModHeatConduction, ONLY: get_heat_flux
+    use ModGeometry, ONLY: r_GB
     use ModConst, ONLY: cBoltzmann, cElectronMass, cProtonMass, cTwoPi, &
          cElectronCharge, cEps
     use ModCellGradient, ONLY: calc_divergence
+    use ModCoordTransform, ONLY: rot_xyz_rlonlat, xyz_to_rlonlat
     use ModHeatFluxCollisionless, ONLY: UseHeatFluxCollisionless, &
          get_gamma_collisionless
+    use ModZdiMagnetogram, ONLY: zdi_is_loaded, eval_zdi_surface_field
 #ifdef _OPENACC
     use ModUtilities, ONLY: norm2
 #endif
@@ -791,6 +866,10 @@ contains
     real :: StateLeft_V(nVar), StateRight_V(nVar)
 
     real :: cTeTiExchangeRate, cTeTiExchangeRateSi, HeatExchange, Te
+    real :: FullB_D(3), Brlonlat_D(3), XyzRlonlat_DD(3,3), UnitB
+    real :: rZdi, LonZdi, LatZdi
+    real :: ZdiBr, ZdiBphi, ZdiBtheta
+    real :: ZdiBthetaPol, ZdiBphiPol, ZdiBthetaTor, ZdiBphiTor
 
     real, allocatable :: PeU_DG(:,:,:,:)
     real :: GammaTmp, InvGammaM1
@@ -823,6 +902,78 @@ contains
           PlotVar_G(i,j,k) = TiFraction*State_VGB(p_,i,j,k,iBlock) &
                /State_VGB(Rho_,i,j,k,iBlock)*No2Si_V(UnitTemperature_)
        end do; end do; end do
+
+    case('blon', 'blat', 'bphi', 'btheta')
+       if(IsDimensional)then
+          UnitB = No2Io_V(UnitB_)
+          NameIdlUnit = NameIdlUnit_V(UnitB_)
+          NameTecUnit = '['//trim(NameIdlUnit)//']'
+       else
+          UnitB = 1.0
+          NameIdlUnit = '-'
+          NameTecUnit = '-'
+       end if
+       do k = MinK,MaxK; do j = MinJ,MaxJ; do i = MinI,MaxI
+          if(r_GB(i,j,k,iBlock) <= 0.0) CYCLE
+          if(UseB0)then
+             FullB_D = State_VGB(Bx_:Bz_,i,j,k,iBlock) + B0_DGB(:,i,j,k,iBlock)
+          else
+             FullB_D = State_VGB(Bx_:Bz_,i,j,k,iBlock)
+          end if
+          XyzRlonlat_DD = rot_xyz_rlonlat(Xyz_DGB(:,i,j,k,iBlock))
+          Brlonlat_D    = matmul(FullB_D, XyzRlonlat_DD)
+          select case(NameVar)
+          case('blon', 'bphi')
+             PlotVar_G(i,j,k) = UnitB*Brlonlat_D(2)
+          case('blat')
+             PlotVar_G(i,j,k) = UnitB*Brlonlat_D(3)
+          case('btheta')
+             ! Theta is co-latitude (southward), opposite of latitude.
+             PlotVar_G(i,j,k) = -UnitB*Brlonlat_D(3)
+          end select
+       end do; end do; end do
+
+    case('zdibr','zdibphi','zdibtheta','zdiblon','zdiblat', &
+         'zdibphip','zdibthetap','zdibphit','zdibthetat')
+       if(IsDimensional)then
+          UnitB = ZdiFieldScaleNo*No2Io_V(UnitB_)
+          NameIdlUnit = NameIdlUnit_V(UnitB_)
+          NameTecUnit = '['//trim(NameIdlUnit)//']'
+       else
+          UnitB = ZdiFieldScaleNo
+          NameIdlUnit = '-'
+          NameTecUnit = '-'
+       end if
+       PlotVar_G = 0.0
+       if(.not.UseZdiMagnetogram .or. .not.zdi_is_loaded())then
+          ! Keep zeros if no ZDI file is active.
+       else
+          do k = MinK,MaxK; do j = MinJ,MaxJ; do i = MinI,MaxI
+             if(r_GB(i,j,k,iBlock) <= 0.0) CYCLE
+             call xyz_to_rlonlat(Xyz_DGB(:,i,j,k,iBlock), rZdi, LonZdi, LatZdi)
+             LonZdi = modulo(LonZdi - ZdiLonShift, cTwoPi)
+             call eval_zdi_surface_field(LonZdi, LatZdi, ZdiBr, ZdiBphi, ZdiBtheta, &
+                  ZdiBthetaPol, ZdiBphiPol, ZdiBthetaTor, ZdiBphiTor)
+             select case(NameVar)
+             case('zdibr')
+                PlotVar_G(i,j,k) = UnitB*ZdiBr
+             case('zdiblon','zdibphi')
+                PlotVar_G(i,j,k) = UnitB*ZdiBphi
+             case('zdiblat')
+                PlotVar_G(i,j,k) = -UnitB*ZdiBtheta
+             case('zdibtheta')
+                PlotVar_G(i,j,k) = UnitB*ZdiBtheta
+             case('zdibphip')
+                PlotVar_G(i,j,k) = UnitB*ZdiBphiPol
+             case('zdibthetap')
+                PlotVar_G(i,j,k) = UnitB*ZdiBthetaPol
+             case('zdibphit')
+                PlotVar_G(i,j,k) = UnitB*ZdiBphiTor
+             case('zdibthetat')
+                PlotVar_G(i,j,k) = UnitB*ZdiBthetaTor
+             end select
+          end do; end do; end do
+       end if
 
     case('qrad')
        call get_tesi_c(iBlock, TeSi_C)
@@ -1054,9 +1205,10 @@ contains
     use ModB0, ONLY: B0_DGB
     use BATL_lib, ONLY: CellSize_DB, Phi_, Theta_, x_, y_, Xyz_DGB
     use ModGeometry, ONLY: TypeGeometry
-    use ModCoordTransform, ONLY: rot_xyz_sph
-    use ModNumConst, ONLY: cPi
+    use ModCoordTransform, ONLY: rot_xyz_sph, rot_xyz_rlonlat, xyz_to_rlonlat
+    use ModNumConst, ONLY: cPi, cTwoPi
     use ModIO, ONLY: IsRestart
+    use ModZdiMagnetogram, ONLY: zdi_is_loaded, eval_zdi_surface_field
 
     integer,          intent(in)  :: iBlock, iSide
     character(len=*), intent(in)  :: TypeBc
@@ -1101,6 +1253,10 @@ contains
     real    :: FullB_D(3), SignBr
     real    :: U, Bdir_D(3)
     real    :: Gamma
+    real    :: FrampZdi, MixZdi
+    real    :: ZdiBr, ZdiBphi, ZdiBtheta, rZdi, LonZdi, LatZdi
+    real    :: ZdiRlonLat_D(3), XyzRlonLat_DD(3,3)
+    real    :: B0t_D(3), B1tTarget_D(3)
 
     logical:: DoTest
     character(len=*), parameter:: NameSub = 'user_set_cell_boundary'
@@ -1114,6 +1270,9 @@ contains
 #endif
 
     IsFound = .true.
+
+    FrampZdi = 0.0
+    MixZdi   = 0.0
 
     if(UseAwsom)then
 
@@ -1136,6 +1295,41 @@ contains
        end select
 #endif
 
+       if(UseZdiBoundary .and. zdi_is_loaded())then
+          FrampZdi = 1.0
+
+          if(ZdiRampIterStop > ZdiRampIterStart)then
+             FrampZdi = real(nIteration - ZdiRampIterStart) &
+                  / real(ZdiRampIterStop - ZdiRampIterStart)
+          else if(ZdiRampStop > ZdiRampStart)then
+             FrampZdi = (tSimulation - ZdiRampStart)/(ZdiRampStop - ZdiRampStart)
+          else if(ZdiRampIterStart > 0)then
+             FrampZdi = merge(1.0, 0.0, nIteration >= ZdiRampIterStart)
+          else if(ZdiRampStart >= 0.0)then
+             FrampZdi = merge(1.0, 0.0, tSimulation >= ZdiRampStart)
+          end if
+
+          FrampZdi = min(1.0, max(0.0, FrampZdi))
+          select case(trim(TypeZdiRamp))
+          case('none')
+             FrampZdi = merge(1.0, 0.0, FrampZdi > 0.0)
+          case('linear')
+             ! keep linear
+          case default
+             ! cosine ramp (default)
+             FrampZdi = 0.5*(1.0 - cos(cPi*FrampZdi))
+          end select
+
+          select case(trim(TypeZdiBoundary))
+          case('clamp')
+             MixZdi = FrampZdi
+          case('nudge')
+             MixZdi = min(1.0, max(0.0, ZdiBcStrength*FrampZdi))
+          case default
+             MixZdi = 0.0
+          end select
+       end if
+
        !$acc loop vector collapse(2) independent &
        !$acc private(rUnit_D, Br1_D, Bt1_D, FullB_D)
        do k = MinK, MaxK; do j = MinJ, MaxJ
@@ -1144,6 +1338,27 @@ contains
 
           Br1_D = sum(State_VGB(Bx_:Bz_,1,j,k,iBlock)*Runit_D)*Runit_D
           Bt1_D = State_VGB(Bx_:Bz_,1,j,k,iBlock) - Br1_D
+
+#ifndef _OPENACC
+          if(MixZdi > 0.0)then
+             call xyz_to_rlonlat(Xyz_DGB(:,1,j,k,iBlock), rZdi, LonZdi, LatZdi)
+             LonZdi = modulo(LonZdi - ZdiLonShift, cTwoPi)
+             call eval_zdi_surface_field(LonZdi, LatZdi, ZdiBr, ZdiBphi, ZdiBtheta)
+
+             ! ZDI evaluator returns (Br, Bphi, Btheta) with theta = co-latitude.
+             ! rot_xyz_rlonlat uses (Br, BLon, BLat), so BLat = -Btheta.
+             ZdiRlonLat_D = [0.0, ZdiBcScale*ZdiFieldScaleNo*ZdiBphi, &
+                  -ZdiBcScale*ZdiFieldScaleNo*ZdiBtheta]
+             XyzRlonLat_DD = rot_xyz_rlonlat(Xyz_DGB(:,1,j,k,iBlock))
+             B1tTarget_D = matmul(ZdiRlonLat_D, transpose(XyzRlonLat_DD))
+
+             B0t_D = B0_DGB(:,1,j,k,iBlock) - &
+                  sum(B0_DGB(:,1,j,k,iBlock)*Runit_D)*Runit_D
+             B1tTarget_D = B1tTarget_D - B0t_D
+
+             Bt1_D = (1.0 - MixZdi)*Bt1_D + MixZdi*B1tTarget_D
+          end if
+#endif
 
           ! Set B1r=0, and B1theta = B1theta(1) and B1phi = B1phi(1)
           do i = MinI, 0

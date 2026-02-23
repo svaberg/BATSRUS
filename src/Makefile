@@ -112,6 +112,7 @@ OBJECTS = \
 	ModUaCoupling.o \
 	ModUserEmpty.o \
 	ModUserInterface.o \
+	ModZdiMagnetogram.o \
 	ModUser.o \
 	ModViscosity.o \
 	ModWaves.o \
