@@ -1,5 +1,5 @@
 #DESCRIPTION
-Param/CORONA/PARAM.AwsomZdiPfss.Common.in		StringDescription
+Param/ZDI/PARAM.AwsomZdiPfss.Common.in		StringDescription
 
 #COMPONENT
 SC			NameComp
@@ -29,7 +29,7 @@ HGR			TypeCoordSystem
 1.0			ElectronTemperatureRatio
 
 #HARMONICSFILE
-Param/CORONA/coeff-Mel25-5_wso.dat		NameHarmonicsFile
+Param/ZDI/coeff-Mel25-5_wso.dat		NameHarmonicsFile
 
 #FACTORB0
 0.2			FactorB0
@@ -75,7 +75,7 @@ T			UseCoarseAxis
 
 #ZDIMAGNETOGRAM
 T			UseZdiMagnetogram
-Param/CORONA/coeff-Mel25-5.dat	NameZdiCoeffFile
+Param/ZDI/coeff-Mel25-5.dat	NameZdiCoeffFile
 0.1			ZdiFieldScaleIo
 0.0			ZdiLonShiftDeg
 

@@ -1,8 +1,8 @@
 #INCLUDE
-Param/CORONA/PARAM.AwsomZdiPfss.Common.in
+Param/ZDI/PARAM.AwsomZdiPfss.Common.in
 
 #DESCRIPTION
-Param/CORONA/PARAM.AwsomZdiPfssFree.in		StringDescription
+Param/ZDI/PARAM.AwsomZdiPfssFree.in		StringDescription
 
 #ZDIBOUNDARY
 T			UseZdiBoundary

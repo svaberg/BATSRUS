@@ -1250,7 +1250,7 @@ test_awsom_zdipfss:
 
 test_awsom_zdipfss_compile:
 	./Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4
-	./Config.pl -opt=Param/CORONA/PARAM.AwsomZdiPfssFree.in
+	./Config.pl -opt=Param/ZDI/PARAM.AwsomZdiPfssFree.in
 	$(MAKE) BATSRUS
 	make PIDL
 
@@ -1273,13 +1273,13 @@ test_awsom_zdipfss_check:
 test_awsom_zdipfss_free_rundir:
 	rm -rf ${TESTDIR_AWSOM_ZDIPFSS_FREE}
 	$(MAKE) rundir RUNDIR=${TESTDIR_AWSOM_ZDIPFSS_FREE} COMPONENT=SC STANDALONE=YES GMDIR=`pwd`
-	cd ${TESTDIR_AWSOM_ZDIPFSS_FREE}; cp Param/CORONA/PARAM.AwsomZdiPfssFree.in PARAM.in
+	cd ${TESTDIR_AWSOM_ZDIPFSS_FREE}; cp Param/ZDI/PARAM.AwsomZdiPfssFree.in PARAM.in
 	-./TestParam.pl -F ${TESTDIR_AWSOM_ZDIPFSS_FREE}/PARAM.in
 
 test_awsom_zdipfss_clamp_rundir:
 	rm -rf ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}
 	$(MAKE) rundir RUNDIR=${TESTDIR_AWSOM_ZDIPFSS_CLAMP} COMPONENT=SC STANDALONE=YES GMDIR=`pwd`
-	cd ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}; cp Param/CORONA/PARAM.AwsomZdiPfssClamp.in PARAM.in
+	cd ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}; cp Param/ZDI/PARAM.AwsomZdiPfssClamp.in PARAM.in
 	-./TestParam.pl -F ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/PARAM.in
 
 test_awsom_zdipfss_free_run:
