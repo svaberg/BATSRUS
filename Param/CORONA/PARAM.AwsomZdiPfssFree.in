@@ -1,0 +1,17 @@
+#INCLUDE
+Param/CORONA/PARAM.AwsomZdiPfss.Common.in
+
+#DESCRIPTION
+Param/CORONA/PARAM.AwsomZdiPfssFree.in		StringDescription
+
+#ZDIBOUNDARY
+T			UseZdiBoundary
+F			UseZdiBoundaryRadial
+off			TypeZdiBoundary
+none			TypeZdiRamp
+1.0			ZdiBcStrength
+1.0			ZdiBcScale
+1			ZdiRampIterStart
+30			ZdiRampIterStop
+-1.0			ZdiRampStart
+-1.0			ZdiRampStop

@@ -34,6 +34,7 @@ test_help:
 	@echo "    test_moonimpact            (run moon impact test)"
 	@echo "    test_anisotropic           (run anisotropic pressure test)"
 	@echo "    test_awsom                 (run AWSoM corona test)"
+	@echo "    test_awsom_zdipfss         (run AWSoM PFSS+ZDI free/clamp experiment pair)"
 	@echo "    test_awsom_bvector         (run AWSoM with vector B field)"
 	@echo "    test_awsom_gpu             (run AWSoM corona test on GPU)"
 	@echo "    test_awsom_large_gpu       (run large AWSoM corona test on GPU)"
@@ -1232,6 +1233,82 @@ test_awsom_bvector_check:
 
 
 ### AWSOM TEST WITH CMEs
+
+TESTDIR_AWSOM_ZDIPFSS_FREE  ?= run_test_awsom_mel25_pfsszdi_free
+TESTDIR_AWSOM_ZDIPFSS_CLAMP ?= run_test_awsom_mel25_pfsszdi_clamp
+
+test_awsom_zdipfss:
+	touch test_awsom_zdipfss.diff
+	@echo "test_awsom_zdipfss_compile..." > test_awsom_zdipfss.diff
+	$(MAKE) test_awsom_zdipfss_compile
+	@echo "test_awsom_zdipfss_rundir..." >> test_awsom_zdipfss.diff
+	$(MAKE) test_awsom_zdipfss_rundir
+	@echo "test_awsom_zdipfss_run..." >> test_awsom_zdipfss.diff
+	$(MAKE) test_awsom_zdipfss_run
+	@echo "test_awsom_zdipfss_check..." >> test_awsom_zdipfss.diff
+	$(MAKE) test_awsom_zdipfss_check
+
+test_awsom_zdipfss_compile:
+	./Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4
+	./Config.pl -opt=Param/CORONA/PARAM.AwsomZdiPfssFree.in
+	$(MAKE) BATSRUS
+	make PIDL
+
+test_awsom_zdipfss_rundir:
+	$(MAKE) test_awsom_zdipfss_free_rundir
+	$(MAKE) test_awsom_zdipfss_clamp_rundir
+
+test_awsom_zdipfss_run:
+	$(MAKE) test_awsom_zdipfss_free_run
+	$(MAKE) test_awsom_zdipfss_clamp_run
+
+test_awsom_zdipfss_check:
+	touch test_awsom_zdipfss_free.diff
+	touch test_awsom_zdipfss_clamp.diff
+	$(MAKE) test_awsom_zdipfss_free_check
+	$(MAKE) test_awsom_zdipfss_clamp_check
+	@cat test_awsom_zdipfss_free.diff test_awsom_zdipfss_clamp.diff > test_awsom_zdipfss.diff
+	ls -l test_awsom_zdipfss.diff
+
+test_awsom_zdipfss_free_rundir:
+	rm -rf ${TESTDIR_AWSOM_ZDIPFSS_FREE}
+	$(MAKE) rundir RUNDIR=${TESTDIR_AWSOM_ZDIPFSS_FREE} COMPONENT=SC STANDALONE=YES GMDIR=`pwd`
+	cd ${TESTDIR_AWSOM_ZDIPFSS_FREE}; cp Param/CORONA/PARAM.AwsomZdiPfssFree.in PARAM.in
+	-./TestParam.pl -F ${TESTDIR_AWSOM_ZDIPFSS_FREE}/PARAM.in
+
+test_awsom_zdipfss_clamp_rundir:
+	rm -rf ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}
+	$(MAKE) rundir RUNDIR=${TESTDIR_AWSOM_ZDIPFSS_CLAMP} COMPONENT=SC STANDALONE=YES GMDIR=`pwd`
+	cd ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}; cp Param/CORONA/PARAM.AwsomZdiPfssClamp.in PARAM.in
+	-./TestParam.pl -F ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/PARAM.in
+
+test_awsom_zdipfss_free_run:
+	cd ${TESTDIR_AWSOM_ZDIPFSS_FREE}; ${MPIRUN} ./BATSRUS.exe > runlog
+
+test_awsom_zdipfss_clamp_run:
+	cd ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}; ${MPIRUN} ./BATSRUS.exe > runlog
+
+test_awsom_zdipfss_free_check:
+	@echo "[free] checking expected PFSS+ZDI outputs" > test_awsom_zdipfss_free.diff
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/shl_var_6_n00000100.out
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/3d__var_5_n00000100.T
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/3d__var_5_n00000100_0.tec
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/3d__var_5_n00000100_1.tec
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/3d__var_5_n00000100_2.tec
+	@echo "[free] shell frames:" `ls ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/shl_var_6_n*.out | wc -l` >> test_awsom_zdipfss_free.diff
+	@echo "[free] final shell header:" `head -n 1 ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/shl_var_6_n00000100.out` >> test_awsom_zdipfss_free.diff
+	ls -l test_awsom_zdipfss_free.diff
+
+test_awsom_zdipfss_clamp_check:
+	@echo "[clamp] checking expected PFSS+ZDI outputs" > test_awsom_zdipfss_clamp.diff
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_6_n00000100.out
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/3d__var_5_n00000100.T
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/3d__var_5_n00000100_0.tec
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/3d__var_5_n00000100_1.tec
+	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/3d__var_5_n00000100_2.tec
+	@echo "[clamp] shell frames:" `ls ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_6_n*.out | wc -l` >> test_awsom_zdipfss_clamp.diff
+	@echo "[clamp] final shell header:" `head -n 1 ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_6_n00000100.out` >> test_awsom_zdipfss_clamp.diff
+	ls -l test_awsom_zdipfss_clamp.diff
 
 test_awsom:
 	touch test_awsom.diff
@@ -2829,4 +2906,3 @@ test_L1toBC_check:
 test_spectrum:
 	cd ${SHAREDIR}; $(MAKE) LIB
 	cd srcPostProc; $(MAKE) test_spectrum
-
