@@ -364,7 +364,7 @@ contains
        do m = 0, l
           PrevP = 0.0
           if(l-1 >= m) PrevP = P_II(l-1,m)
-          dPdTheta_II(l,m) = - (real(l)*CosTheta*P_II(l,m) - real(l + m)*PrevP) &
+          dPdTheta_II(l,m) = (real(l)*CosTheta*P_II(l,m) - real(l + m)*PrevP) &
                / SinTheta
        end do
     end do

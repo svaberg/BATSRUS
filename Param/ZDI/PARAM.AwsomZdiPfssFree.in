@@ -4,6 +4,7 @@ Param/ZDI/PARAM.AwsomZdiPfss.Common.in
 #DESCRIPTION
 Param/ZDI/PARAM.AwsomZdiPfssFree.in		StringDescription
 
+#USERINPUTBEGIN -----------------------------------
 #ZDIBOUNDARY
 T			UseZdiBoundary
 F			UseZdiBoundaryRadial
@@ -15,3 +16,4 @@ none			TypeZdiRamp
 30			ZdiRampIterStop
 -1.0			ZdiRampStart
 -1.0			ZdiRampStop
+#USERINPUTEND -------------------------------------

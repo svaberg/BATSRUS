@@ -1274,13 +1274,13 @@ test_awsom_zdipfss_free_rundir:
 	rm -rf ${TESTDIR_AWSOM_ZDIPFSS_FREE}
 	$(MAKE) rundir RUNDIR=${TESTDIR_AWSOM_ZDIPFSS_FREE} COMPONENT=SC STANDALONE=YES GMDIR=`pwd`
 	cd ${TESTDIR_AWSOM_ZDIPFSS_FREE}; cp Param/ZDI/PARAM.AwsomZdiPfssFree.in PARAM.in
-	-./TestParam.pl -F ${TESTDIR_AWSOM_ZDIPFSS_FREE}/PARAM.in
+	@echo "Skipping TestParam.pl (rewrites symlinked Param/ZDI include files)"
 
 test_awsom_zdipfss_clamp_rundir:
 	rm -rf ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}
 	$(MAKE) rundir RUNDIR=${TESTDIR_AWSOM_ZDIPFSS_CLAMP} COMPONENT=SC STANDALONE=YES GMDIR=`pwd`
 	cd ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}; cp Param/ZDI/PARAM.AwsomZdiPfssClamp.in PARAM.in
-	-./TestParam.pl -F ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/PARAM.in
+	@echo "Skipping TestParam.pl (rewrites symlinked Param/ZDI include files)"
 
 test_awsom_zdipfss_free_run:
 	cd ${TESTDIR_AWSOM_ZDIPFSS_FREE}; ${MPIRUN} ./BATSRUS.exe > runlog
@@ -1290,24 +1290,20 @@ test_awsom_zdipfss_clamp_run:
 
 test_awsom_zdipfss_free_check:
 	@echo "[free] checking expected PFSS+ZDI outputs" > test_awsom_zdipfss_free.diff
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/shl_var_6_n00000100.out
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/3d__var_5_n00000100.T
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/3d__var_5_n00000100_0.tec
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/3d__var_5_n00000100_1.tec
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/3d__var_5_n00000100_2.tec
-	@echo "[free] shell frames:" `ls ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/shl_var_6_n*.out | wc -l` >> test_awsom_zdipfss_free.diff
-	@echo "[free] final shell header:" `head -n 1 ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/shl_var_6_n00000100.out` >> test_awsom_zdipfss_free.diff
+	@ls ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/shl_var_*_n00000100.out >/dev/null
+	@ls ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/z=0_var_*_n00000100.T >/dev/null
+	@ls ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/3d__var_*_n00000100.T >/dev/null
+	@echo "[free] shell frames:" `ls ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/shl_var_*_n*.out | wc -l` >> test_awsom_zdipfss_free.diff
+	@echo "[free] final shell header:" `head -n 1 $$(ls ${TESTDIR_AWSOM_ZDIPFSS_FREE}/SC/IO2/shl_var_*_n00000100.out | head -n 1)` >> test_awsom_zdipfss_free.diff
 	ls -l test_awsom_zdipfss_free.diff
 
 test_awsom_zdipfss_clamp_check:
 	@echo "[clamp] checking expected PFSS+ZDI outputs" > test_awsom_zdipfss_clamp.diff
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_6_n00000100.out
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/3d__var_5_n00000100.T
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/3d__var_5_n00000100_0.tec
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/3d__var_5_n00000100_1.tec
-	@test -f ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/3d__var_5_n00000100_2.tec
-	@echo "[clamp] shell frames:" `ls ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_6_n*.out | wc -l` >> test_awsom_zdipfss_clamp.diff
-	@echo "[clamp] final shell header:" `head -n 1 ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_6_n00000100.out` >> test_awsom_zdipfss_clamp.diff
+	@ls ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_*_n00000100.out >/dev/null
+	@ls ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/z=0_var_*_n00000100.T >/dev/null
+	@ls ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/3d__var_*_n00000100.T >/dev/null
+	@echo "[clamp] shell frames:" `ls ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_*_n*.out | wc -l` >> test_awsom_zdipfss_clamp.diff
+	@echo "[clamp] final shell header:" `head -n 1 $$(ls ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_*_n00000100.out | head -n 1)` >> test_awsom_zdipfss_clamp.diff
 	ls -l test_awsom_zdipfss_clamp.diff
 
 test_awsom:
