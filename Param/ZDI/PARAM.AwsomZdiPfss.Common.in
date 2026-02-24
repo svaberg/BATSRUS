@@ -23,6 +23,9 @@ T			DoSaveRestart
 #COORDSYSTEM
 HGR			TypeCoordSystem
 
+#ROTPERIOD
+915840.0		RotPeriodSI (10.6 day in second)
+
 #PLASMA
 1.0			FluidMass [amu]
 1.0			IonCharge [e]
