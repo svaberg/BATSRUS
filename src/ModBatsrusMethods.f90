@@ -400,6 +400,7 @@ contains
     use ModHeatConduction, ONLY: init_heat_conduction
     use ModParticleFieldLine, ONLY: UseParticles, init_particle_line
     use ModRestartFile, ONLY: UseRestartOutSeries
+    use ModIO, ONLY: iUnitOut, write_prefix
     use ModMessagePass, ONLY: exchange_messages
     use ModUserInterface ! user_initial_perturbation
     use ModLoadBalance, ONLY: load_balance, select_stepping
@@ -413,6 +414,10 @@ contains
     character(len=*), parameter:: NameSub = 'BATS_init_session'
     !--------------------------------------------------------------------------
     call test_start(NameSub, DoTest)
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': begin'
+       flush(iUnitOut)
+    end if
 
     TimeSimulationOldCheck = -1e10
 
@@ -427,6 +432,10 @@ contains
 
     ! Find the test cell defined by #TESTIJK or #TESTXYZ commands
     call find_test_cell
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after find_test_cell'
+       flush(iUnitOut)
+    end if
 
     ! Transform velocities from a rotating system to the HGI system if required
     if(iSignRotationIC /= 0)then
@@ -444,26 +453,54 @@ contains
        if(UseCme .and. UseFieldLineThreads) call set_threads(NameSub)
        UseUserPerturbation=.false.
     end if
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after user perturbation'
+       flush(iUnitOut)
+    end if
 
     ! Set number of explicit and implicit blocks
     ! Partially implicit/local selection will be done in each time step
     call select_stepping(DoPartSelect=.false.)
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after select_stepping'
+       flush(iUnitOut)
+    end if
 
     ! Ensure zero divergence for the CT scheme
     if(UseConstrainB .and. DoInitConstrainB)&
          call BATS_init_constrain_b
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after BATS_init_constrain_b'
+       flush(iUnitOut)
+    end if
 
     if(UseHallResist .or. UseBiermannBattery)call init_hall_resist
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after init_hall_resist'
+       flush(iUnitOut)
+    end if
 
     if(UsePic) call pic_init_region
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after pic_init_region'
+       flush(iUnitOut)
+    end if
 
     if(UseHeatConduction .or. UseIonHeatConduction .or. &
          UseAnisoPressure .and. UseResistivity .and. &
          UseHeatExchange .and. UseElectronPressure)&
          call init_heat_conduction
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after init_heat_conduction'
+       flush(iUnitOut)
+    end if
 
     if(UseParticles) &
          call init_particle_line
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after init_particle_line'
+       flush(iUnitOut)
+    end if
 
     if(UseSemiImplicit)then
        select case(TypeSemiImplicit)
@@ -473,19 +510,43 @@ contains
     elseif(UseFullImplicit.and.UseRadDiffusion)then
        call init_rad_diffusion
     end if
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after init_rad_diffusion'
+       flush(iUnitOut)
+    end if
 
     ! Make sure that ghost cells are up to date
     call exchange_messages
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after exchange_messages'
+       flush(iUnitOut)
+    end if
 
     if(UseProjection)call project_divb
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after project_divb'
+       flush(iUnitOut)
+    end if
 
     call BATS_save_files('INITIAL')
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after BATS_save_files(INITIAL)'
+       flush(iUnitOut)
+    end if
 
     ! save initial restart series
     if (UseRestartOutSeries) call BATS_save_files('restart')
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after BATS_save_files(restart)'
+       flush(iUnitOut)
+    end if
 
     ! Set all arrays for AMR
     call init_amr_criteria
+    if(DoTest)then
+       call write_prefix; write(iUnitOut,*) NameSub,': after init_amr_criteria'
+       flush(iUnitOut)
+    end if
 
     call test_stop(NameSub, DoTest)
 

@@ -35,6 +35,7 @@ program batsrus
   implicit none
 
   integer :: iSession=1
+  logical :: DoTestMain
   logical :: IsForcedStop = .false.
   real(Real8_) :: CpuTimeStart
 
@@ -86,36 +87,90 @@ program batsrus
 
      ! Test string is read, so set the test flags now
      ! call set_oktest('main',DoTest,DoTest)
+     call test_start('main', DoTestMain)
 
      ! Time execution (timing parameters were set by MH_set_parameters)
      if(iSession == 1)then
+        if(DoTestMain) then
+           write(*,*) 'main: before timing_start(BATSRUS/setup)'
+           flush(6)
+        end if
         call timing_start('BATSRUS')
         call timing_start('setup')
+        if(DoTestMain) then
+           write(*,*) 'main: before BATS_setup'
+           flush(6)
+        end if
         call BATS_setup
+        if(DoTestMain) then
+           write(*,*) 'main: after BATS_setup'
+           flush(6)
+           write(*,*) 'main: before BATS_init_session'
+           flush(6)
+        end if
         call BATS_init_session
+        if(DoTestMain) then
+           write(*,*) 'main: after BATS_init_session'
+           flush(6)
+           write(*,*) 'main: before timing_stop(setup)'
+           flush(6)
+        end if
         call timing_stop('setup')
+        if(DoTestMain) then
+           write(*,*) 'main: after timing_stop(setup)'
+           flush(6)
+        end if
         if(DnTiming > -3)call timing_report_total
+        if(DoTestMain) then
+           write(*,*) 'main: after timing_report_total'
+           flush(6)
+        end if
         if(iProc == 0)write(*,*)'Resetting timing counters after setup.'
         call timing_reset('#all',3)
+        if(DoTestMain) then
+           write(*,*) 'main: after timing_reset(#all,3)'
+           flush(6)
+        end if
      else
         call write_runtime_values
         call BATS_init_session
      end if
+     call test_stop('main', DoTestMain)
 
      TIMELOOP: do
         ! Stop this session if stopping conditions are fulfilled
         if(do_stop_session()) EXIT TIMELOOP
         if(do_stop_run()) EXIT SESSIONLOOP
 
+        if(DoTestMain) then
+           write(*,*) 'main: before timing_step'
+           flush(6)
+        end if
         call timing_step(nStep+1)
+        if(DoTestMain) then
+           write(*,*) 'main: after timing_step'
+           flush(6)
+           write(*,*) 'main: before BATS_advance'
+           flush(6)
+        end if
 
         if(IsTimeAccurate .and. tSimulationMax > 0.0) then
            call BATS_advance(tSimulationMax)
         else
            call BATS_advance(huge(0.0))
         end if
+        if(DoTestMain) then
+           write(*,*) 'main: after BATS_advance'
+           flush(6)
+           write(*,*) 'main: before show_progress'
+           flush(6)
+        end if
 
         call show_progress
+        if(DoTestMain) then
+           write(*,*) 'main: after show_progress'
+           flush(6)
+        end if
 
      end do TIMELOOP
 
