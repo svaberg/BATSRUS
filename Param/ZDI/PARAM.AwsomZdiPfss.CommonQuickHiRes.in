@@ -257,13 +257,13 @@ rho ux uy uz ti bx by bz I01 I02 p
 g rbody
 
 #SAVEINITIAL
-F			DoSaveInitial
+T			DoSaveInitial
 
 #DOAMR
 F			DoAmr
 
 #STOP
-100			MaxIteration 60000
+1			MaxIteration 60000
 -1.0			tSimulationMax
 !
 !#RUN ##########################################################################
