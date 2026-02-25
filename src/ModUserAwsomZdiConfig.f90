@@ -25,6 +25,7 @@ module ModUserAwsomZdiConfig
 
   public :: read_zdi_magnetogram_param
   public :: read_zdi_boundary_param
+  public :: get_zdi_boundary_ramp_mix
 
 contains
 
@@ -55,5 +56,46 @@ contains
     call read_var('ZdiRampStart',    ZdiRampStart)
     call read_var('ZdiRampStop',     ZdiRampStop)
   end subroutine read_zdi_boundary_param
+
+  subroutine get_zdi_boundary_ramp_mix(nIteration, tSimulation, FrampZdi, MixZdi)
+    use ModNumConst, ONLY: cPi
+
+    integer, intent(in) :: nIteration
+    real, intent(in) :: tSimulation
+    real, intent(out) :: FrampZdi, MixZdi
+    !--------------------------------------------------------------------------
+    FrampZdi = 1.0
+
+    if(ZdiRampIterStop > ZdiRampIterStart)then
+       FrampZdi = real(nIteration - ZdiRampIterStart) &
+            / real(ZdiRampIterStop - ZdiRampIterStart)
+    else if(ZdiRampStop > ZdiRampStart)then
+       FrampZdi = (tSimulation - ZdiRampStart)/(ZdiRampStop - ZdiRampStart)
+    else if(ZdiRampIterStart > 0)then
+       FrampZdi = merge(1.0, 0.0, nIteration >= ZdiRampIterStart)
+    else if(ZdiRampStart >= 0.0)then
+       FrampZdi = merge(1.0, 0.0, tSimulation >= ZdiRampStart)
+    end if
+
+    FrampZdi = min(1.0, max(0.0, FrampZdi))
+    select case(trim(TypeZdiRamp))
+    case('none')
+       FrampZdi = merge(1.0, 0.0, FrampZdi > 0.0)
+    case('linear')
+       ! keep linear
+    case default
+       ! cosine ramp (default)
+       FrampZdi = 0.5*(1.0 - cos(cPi*FrampZdi))
+    end select
+
+    select case(trim(TypeZdiBoundary))
+    case('clamp')
+       MixZdi = FrampZdi
+    case('nudge')
+       MixZdi = min(1.0, max(0.0, ZdiBcStrength*FrampZdi))
+    case default
+       MixZdi = 0.0
+    end select
+  end subroutine get_zdi_boundary_ramp_mix
 
 end module ModUserAwsomZdiConfig

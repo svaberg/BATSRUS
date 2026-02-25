@@ -17,6 +17,7 @@ module ModUser
        UseZdiBoundary, UseZdiBoundaryRadial, TypeZdiBoundary, TypeZdiRamp, &
        ZdiBcStrength, ZdiBcScale, ZdiRampIterStart, ZdiRampIterStop, &
        ZdiRampStart, ZdiRampStop, read_zdi_magnetogram_param, &
+       get_zdi_boundary_ramp_mix, &
        read_zdi_boundary_param
   use ModUserAwsomZdiSelfTest, ONLY: UseZdiSelfTest, read_zdi_selftest_param, &
        run_zdi_selftest_startup_dump
@@ -1290,38 +1291,7 @@ module ModUser
 
        DoUseZdiBoundary = UseZdiBoundary .and. zdi_is_loaded()
        if(DoUseZdiBoundary)then
-          FrampZdi = 1.0
-
-          if(ZdiRampIterStop > ZdiRampIterStart)then
-             FrampZdi = real(nIteration - ZdiRampIterStart) &
-                  / real(ZdiRampIterStop - ZdiRampIterStart)
-          else if(ZdiRampStop > ZdiRampStart)then
-             FrampZdi = (tSimulation - ZdiRampStart)/(ZdiRampStop - ZdiRampStart)
-          else if(ZdiRampIterStart > 0)then
-             FrampZdi = merge(1.0, 0.0, nIteration >= ZdiRampIterStart)
-          else if(ZdiRampStart >= 0.0)then
-             FrampZdi = merge(1.0, 0.0, tSimulation >= ZdiRampStart)
-          end if
-
-          FrampZdi = min(1.0, max(0.0, FrampZdi))
-          select case(trim(TypeZdiRamp))
-          case('none')
-             FrampZdi = merge(1.0, 0.0, FrampZdi > 0.0)
-          case('linear')
-             ! keep linear
-          case default
-             ! cosine ramp (default)
-             FrampZdi = 0.5*(1.0 - cos(cPi*FrampZdi))
-          end select
-
-          select case(trim(TypeZdiBoundary))
-          case('clamp')
-             MixZdi = FrampZdi
-          case('nudge')
-             MixZdi = min(1.0, max(0.0, ZdiBcStrength*FrampZdi))
-          case default
-             MixZdi = 0.0
-          end select
+          call get_zdi_boundary_ramp_mix(nIteration, tSimulation, FrampZdi, MixZdi)
        end if
 
        !$acc loop vector collapse(2) independent &
