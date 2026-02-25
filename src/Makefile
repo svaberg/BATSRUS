@@ -114,6 +114,8 @@ OBJECTS = \
 	ModUserInterface.o \
 	ModZdiMagnetogram.o \
 	ModUserAwsomZdiConfig.o \
+	ModUserAwsomZdiBoundary.o \
+	ModUserAwsomZdiPlot.o \
 	ModUserAwsomZdiSelfTest.o \
 	ModUser.o \
 	ModViscosity.o \

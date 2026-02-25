@@ -19,6 +19,8 @@ module ModUser
        ZdiRampStart, ZdiRampStop, read_zdi_magnetogram_param, &
        get_zdi_boundary_ramp_mix, &
        read_zdi_boundary_param
+  use ModUserAwsomZdiBoundary, ONLY: apply_zdi_boundary_target_cpu
+  use ModUserAwsomZdiPlot, ONLY: set_awsom_zdi_plot_var
   use ModUserAwsomZdiSelfTest, ONLY: UseZdiSelfTest, read_zdi_selftest_param, &
        run_zdi_selftest_startup_dump
   use ModUserEmpty,                                     &
@@ -816,7 +818,7 @@ module ModUser
     use ModVarIndexes, ONLY: nVar, Rho_, p_, Pe_, WaveFirst_, WaveLast_, &
          RhoUx_, RhoUz_, Bx_, By_, Bz_, Ehot_
     use ModFaceValue, ONLY: calc_face_value
-    use ModB0, ONLY: set_b0_face, B0_DGB, UseB0
+    use ModB0, ONLY: set_b0_face
     use ModMultiFluid, ONLY: nIonFluid
     use BATL_lib, ONLY: nDim, nG, MaxDim, FaceNormal_DDFB, CellVolume_GB, &
          Xyz_DGB, Used_GB
@@ -825,10 +827,9 @@ module ModUser
     use ModConst, ONLY: cBoltzmann, cElectronMass, cProtonMass, cTwoPi, &
          cElectronCharge, cEps
     use ModCellGradient, ONLY: calc_divergence
-    use ModCoordTransform, ONLY: rot_xyz_rlonlat, xyz_to_rlonlat
+    use ModCoordTransform, ONLY: xyz_to_rlonlat
     use ModHeatFluxCollisionless, ONLY: UseHeatFluxCollisionless, &
          get_gamma_collisionless
-    use ModZdiMagnetogram, ONLY: zdi_is_loaded, eval_zdi_surface_field
 #ifdef _OPENACC
     use ModUtilities, ONLY: norm2
 #endif
@@ -859,10 +860,7 @@ module ModUser
     real :: StateLeft_V(nVar), StateRight_V(nVar)
 
     real :: cTeTiExchangeRate, cTeTiExchangeRateSi, HeatExchange, Te
-    real :: FullB_D(3), Brlonlat_D(3), XyzRlonlat_DD(3,3), UnitB
-    real :: rZdi, LonZdi, LatZdi
-    real :: ZdiBr, ZdiBphi, ZdiBtheta
-    real :: ZdiBthetaPol, ZdiBphiPol, ZdiBthetaTor, ZdiBphiTor
+    real :: UnitB
 
     real, allocatable :: PeU_DG(:,:,:,:)
     real :: GammaTmp, InvGammaM1
@@ -896,77 +894,11 @@ module ModUser
                /State_VGB(Rho_,i,j,k,iBlock)*No2Si_V(UnitTemperature_)
        end do; end do; end do
 
-    case('blon', 'blat', 'bphi', 'btheta')
-       if(IsDimensional)then
-          UnitB = No2Io_V(UnitB_)
-          NameIdlUnit = NameIdlUnit_V(UnitB_)
-          NameTecUnit = '['//trim(NameIdlUnit)//']'
-       else
-          UnitB = 1.0
-          NameIdlUnit = '-'
-          NameTecUnit = '-'
-       end if
-       do k = MinK,MaxK; do j = MinJ,MaxJ; do i = MinI,MaxI
-          if(r_GB(i,j,k,iBlock) <= 0.0) CYCLE
-          if(UseB0)then
-             FullB_D = State_VGB(Bx_:Bz_,i,j,k,iBlock) + B0_DGB(:,i,j,k,iBlock)
-          else
-             FullB_D = State_VGB(Bx_:Bz_,i,j,k,iBlock)
-          end if
-          XyzRlonlat_DD = rot_xyz_rlonlat(Xyz_DGB(:,i,j,k,iBlock))
-          Brlonlat_D    = matmul(FullB_D, XyzRlonlat_DD)
-          select case(NameVar)
-          case('blon', 'bphi')
-             PlotVar_G(i,j,k) = UnitB*Brlonlat_D(2)
-          case('blat')
-             PlotVar_G(i,j,k) = UnitB*Brlonlat_D(3)
-          case('btheta')
-             ! Theta is co-latitude (southward), opposite of latitude.
-             PlotVar_G(i,j,k) = -UnitB*Brlonlat_D(3)
-          end select
-       end do; end do; end do
-
-    case('zdibr','zdibphi','zdibtheta','zdiblon','zdiblat', &
+    case('blon', 'blat', 'bphi', 'btheta', &
+         'zdibr','zdibphi','zdibtheta','zdiblon','zdiblat', &
          'zdibphip','zdibthetap','zdibphit','zdibthetat')
-       if(IsDimensional)then
-          UnitB = ZdiFieldScaleNo*No2Io_V(UnitB_)
-          NameIdlUnit = NameIdlUnit_V(UnitB_)
-          NameTecUnit = '['//trim(NameIdlUnit)//']'
-       else
-          UnitB = ZdiFieldScaleNo
-          NameIdlUnit = '-'
-          NameTecUnit = '-'
-       end if
-       PlotVar_G = 0.0
-       if(.not.UseZdiMagnetogram .or. .not.zdi_is_loaded())then
-          ! Keep zeros if no ZDI file is active.
-       else
-          do k = MinK,MaxK; do j = MinJ,MaxJ; do i = MinI,MaxI
-             if(r_GB(i,j,k,iBlock) <= 0.0) CYCLE
-             call xyz_to_rlonlat(Xyz_DGB(:,i,j,k,iBlock), rZdi, LonZdi, LatZdi)
-             LonZdi = modulo(LonZdi - ZdiLonShift, cTwoPi)
-             call eval_zdi_surface_field(LonZdi, LatZdi, ZdiBr, ZdiBphi, ZdiBtheta, &
-                  ZdiBthetaPol, ZdiBphiPol, ZdiBthetaTor, ZdiBphiTor)
-             select case(NameVar)
-             case('zdibr')
-                PlotVar_G(i,j,k) = UnitB*ZdiBr
-             case('zdiblon','zdibphi')
-                PlotVar_G(i,j,k) = UnitB*ZdiBphi
-             case('zdiblat')
-                PlotVar_G(i,j,k) = -UnitB*ZdiBtheta
-             case('zdibtheta')
-                PlotVar_G(i,j,k) = UnitB*ZdiBtheta
-             case('zdibphip')
-                PlotVar_G(i,j,k) = UnitB*ZdiBphiPol
-             case('zdibthetap')
-                PlotVar_G(i,j,k) = UnitB*ZdiBthetaPol
-             case('zdibphit')
-                PlotVar_G(i,j,k) = UnitB*ZdiBphiTor
-             case('zdibthetat')
-                PlotVar_G(i,j,k) = UnitB*ZdiBthetaTor
-             end select
-          end do; end do; end do
-       end if
+       call set_awsom_zdi_plot_var(iBlock, NameVar, IsDimensional, &
+            PlotVar_G, NameTecUnit, NameIdlUnit, IsFound)
 
     case('qrad')
        call get_tesi_c(iBlock, TeSi_C)
@@ -1198,10 +1130,10 @@ module ModUser
     use ModB0, ONLY: B0_DGB
     use BATL_lib, ONLY: CellSize_DB, Phi_, Theta_, x_, y_, Xyz_DGB
     use ModGeometry, ONLY: TypeGeometry
-    use ModCoordTransform, ONLY: rot_xyz_sph, rot_xyz_rlonlat, xyz_to_rlonlat
-    use ModNumConst, ONLY: cPi, cTwoPi
+    use ModCoordTransform, ONLY: rot_xyz_sph
+    use ModNumConst, ONLY: cPi
     use ModIO, ONLY: IsRestart
-    use ModZdiMagnetogram, ONLY: zdi_is_loaded, eval_zdi_surface_field
+    use ModZdiMagnetogram, ONLY: zdi_is_loaded
 
     integer,          intent(in)  :: iBlock, iSide
     character(len=*), intent(in)  :: TypeBc
@@ -1247,9 +1179,7 @@ module ModUser
     real    :: U, Bdir_D(3)
     real    :: Gamma
     real    :: FrampZdi, MixZdi
-    real    :: ZdiBr, ZdiBphi, ZdiBtheta, rZdi, LonZdi, LatZdi, LatZdiEval
-    real    :: ZdiRlonLat_D(3), XyzRlonLat_DD(3,3)
-    real    :: B1tTarget_D(3), B1Face_D(3), B1Target_D(3)
+    real    :: B1Face_D(3)
 
     logical:: DoTest, DoUseZdiBoundary
     character(len=*), parameter:: NameSub = 'user_set_cell_boundary'
@@ -1306,31 +1236,8 @@ module ModUser
 
 #ifndef _OPENACC
           if(DoUseZdiBoundary)then
-             call xyz_to_rlonlat(Xyz_DGB(:,1,j,k,iBlock), rZdi, LonZdi, LatZdi)
-             LonZdi = modulo(LonZdi - ZdiLonShift, cTwoPi)
-             ! Avoid exact pole singularities in tangential basis evaluation.
-             LatZdiEval = min(0.5*cPi - 1.0e-8, max(-0.5*cPi + 1.0e-8, LatZdi))
-             call eval_zdi_surface_field(LonZdi, LatZdiEval, ZdiBr, ZdiBphi, ZdiBtheta)
-
-             ! ZDI evaluator returns (Br, Bphi, Btheta) with theta = co-latitude.
-             ! rot_xyz_rlonlat uses (Br, BLon, BLat), so BLat = -Btheta.
-             XyzRlonLat_DD = rot_xyz_rlonlat(Xyz_DGB(:,1,j,k,iBlock))
-             if(MixZdi > 0.0)then
-                ZdiRlonLat_D = [ZdiBcScale*ZdiFieldScaleNo*ZdiBr, &
-                     ZdiBcScale*ZdiFieldScaleNo*ZdiBphi, &
-                     -ZdiBcScale*ZdiFieldScaleNo*ZdiBtheta]
-                B1Target_D = matmul(ZdiRlonLat_D, transpose(XyzRlonLat_DD))
-                B1Target_D = B1Target_D - B0_DGB(:,1,j,k,iBlock)
-                Br1_D = sum(B1Target_D*Runit_D)*Runit_D
-                B1tTarget_D = B1Target_D - sum(B1Target_D*Runit_D)*Runit_D
-                Bt1_D = (1.0 - MixZdi)*Bt1_D + MixZdi*B1tTarget_D
-             else
-                ! Free tangential mode: impose only ZDI Br and leave Bt unchanged.
-                ZdiRlonLat_D = [ZdiBcScale*ZdiFieldScaleNo*ZdiBr, 0.0, 0.0]
-                B1Target_D = matmul(ZdiRlonLat_D, transpose(XyzRlonLat_DD))
-                B1Target_D = B1Target_D - B0_DGB(:,1,j,k,iBlock)
-                Br1_D = sum(B1Target_D*Runit_D)*Runit_D
-             end if
+             call apply_zdi_boundary_target_cpu(Xyz_DGB(:,1,j,k,iBlock), &
+                  B0_DGB(:,1,j,k,iBlock), Runit_D, MixZdi, Br1_D, Bt1_D)
           end if
 #endif
 
