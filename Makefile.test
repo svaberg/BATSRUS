@@ -34,6 +34,7 @@ test_help:
 	@echo "    test_moonimpact            (run moon impact test)"
 	@echo "    test_anisotropic           (run anisotropic pressure test)"
 	@echo "    test_awsom                 (run AWSoM corona test)"
+	@echo "    test_awsom_zdiselftest     (run AWSoM ZDI startup self-test dump)"
 	@echo "    test_awsom_zdipfss         (run AWSoM PFSS+ZDI free/clamp experiment pair)"
 	@echo "    test_awsom_bvector         (run AWSoM with vector B field)"
 	@echo "    test_awsom_gpu             (run AWSoM corona test on GPU)"
@@ -1234,8 +1235,45 @@ test_awsom_bvector_check:
 
 ### AWSOM TEST WITH CMEs
 
+TESTDIR_AWSOM_ZDISELFTEST ?= run_test_awsom_zdi_selftest
 TESTDIR_AWSOM_ZDIPFSS_FREE  ?= run_test_awsom_mel25_pfsszdi_free
 TESTDIR_AWSOM_ZDIPFSS_CLAMP ?= run_test_awsom_mel25_pfsszdi_clamp
+
+test_awsom_zdiselftest:
+	touch test_awsom_zdiselftest.diff
+	@echo "test_awsom_zdiselftest_compile..." > test_awsom_zdiselftest.diff
+	$(MAKE) test_awsom_zdiselftest_compile
+	@echo "test_awsom_zdiselftest_rundir..." >> test_awsom_zdiselftest.diff
+	$(MAKE) test_awsom_zdiselftest_rundir
+	@echo "test_awsom_zdiselftest_run..." >> test_awsom_zdiselftest.diff
+	$(MAKE) test_awsom_zdiselftest_run
+	@echo "test_awsom_zdiselftest_check..." >> test_awsom_zdiselftest.diff
+	$(MAKE) test_awsom_zdiselftest_check
+
+test_awsom_zdiselftest_compile:
+	./Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4
+	./Config.pl -opt=Param/ZDI/PARAM.AwsomZdiSelfTest.in
+	$(MAKE) BATSRUS
+	make PIDL
+
+test_awsom_zdiselftest_rundir:
+	rm -rf ${TESTDIR_AWSOM_ZDISELFTEST}
+	$(MAKE) rundir RUNDIR=${TESTDIR_AWSOM_ZDISELFTEST} COMPONENT=SC STANDALONE=YES GMDIR=`pwd`
+	cd ${TESTDIR_AWSOM_ZDISELFTEST}; cp Param/ZDI/PARAM.AwsomZdiSelfTest.in PARAM.in
+	@echo "Skipping TestParam.pl (unknown #ZDISELFTEST and user-module commands)"
+
+test_awsom_zdiselftest_run:
+	cd ${TESTDIR_AWSOM_ZDISELFTEST}; ${MPIRUN} ./BATSRUS.exe > runlog
+
+test_awsom_zdiselftest_check:
+	@echo "[selftest] checking expected ZDI startup dump outputs" > test_awsom_zdiselftest.diff
+	@ls ${TESTDIR_AWSOM_ZDISELFTEST}/zdi_selftest_points.out >/dev/null
+	@ls ${TESTDIR_AWSOM_ZDISELFTEST}/zdi_selftest_field_2d.out >/dev/null
+	@ls ${TESTDIR_AWSOM_ZDISELFTEST}/zdi_selftest_singlecoeff_points.out >/dev/null
+	@test `ls ${TESTDIR_AWSOM_ZDISELFTEST}/zdi_selftest* | wc -l` -eq 33
+	@echo "[selftest] zdi_selftest* files:" `ls ${TESTDIR_AWSOM_ZDISELFTEST}/zdi_selftest* | wc -l` >> test_awsom_zdiselftest.diff
+	@echo "[selftest] image header:" `head -n 1 ${TESTDIR_AWSOM_ZDISELFTEST}/zdi_selftest_field_2d.out` >> test_awsom_zdiselftest.diff
+	ls -l test_awsom_zdiselftest.diff
 
 test_awsom_zdipfss:
 	touch test_awsom_zdipfss.diff
