@@ -1252,7 +1252,6 @@ test_awsom_zdiselftest:
 
 test_awsom_zdiselftest_compile:
 	./Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4
-	./Config.pl -opt=Param/ZDI/PARAM.AwsomZdiSelfTest.in
 	$(MAKE) BATSRUS
 	make PIDL
 

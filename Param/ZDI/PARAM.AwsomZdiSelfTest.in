@@ -1,5 +1,7 @@
 #DESCRIPTION
 Param/ZDI/PARAM.AwsomZdiSelfTest.in		StringDescription
+! Canonical AWSoM user-module ZDI startup self-test (pure ZDI target dumps).
+! Purpose: validate BATSRUS ZDI evaluator against ZDIpy before PFSS/BC evolution.
 
 #COMPONENT
 SC			NameComp
@@ -250,5 +252,5 @@ T			DoSaveInitial
 F			DoAmr
 
 #STOP
-1			MaxIteration 60000
+1			MaxIteration
 -1.0			tSimulationMax
