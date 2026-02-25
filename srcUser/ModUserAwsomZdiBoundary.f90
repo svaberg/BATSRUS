@@ -5,6 +5,7 @@ module ModUserAwsomZdiBoundary
   private
 
   public :: apply_zdi_boundary_target_cpu
+  public :: compose_zdi_inner_b1_bc
 
 contains
 
@@ -52,5 +53,18 @@ contains
     end if
 
   end subroutine apply_zdi_boundary_target_cpu
+
+  subroutine compose_zdi_inner_b1_bc(DoUseZdiBoundary, Br1_D, Bt1_D, B1Bc_D)
+    logical, intent(in) :: DoUseZdiBoundary
+    real, intent(in) :: Br1_D(3), Bt1_D(3)
+    real, intent(out) :: B1Bc_D(3)
+    !--------------------------------------------------------------------------
+    if(DoUseZdiBoundary)then
+       B1Bc_D = Br1_D + Bt1_D
+    else
+       ! Default AWSoM inner BC keeps B1r=0 (tangential B1 only).
+       B1Bc_D = Bt1_D
+    end if
+  end subroutine compose_zdi_inner_b1_bc
 
 end module ModUserAwsomZdiBoundary

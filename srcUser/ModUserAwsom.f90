@@ -12,8 +12,9 @@ module ModUser
        tChromo => TeChromosphere
   use ModTurbulence, ONLY: PoyntingFluxPerB, PoyntingFluxPerBSi, &
        IsOnAwRepresentative
-  use ModUserAwsomZdiConfig, ONLY: UseZdiBoundary, get_zdi_boundary_mix
-  use ModUserAwsomZdiBoundary, ONLY: apply_zdi_boundary_target_cpu
+  use ModUserAwsomZdiConfig, ONLY: get_zdi_boundary_mix
+  use ModUserAwsomZdiBoundary, ONLY: apply_zdi_boundary_target_cpu, &
+       compose_zdi_inner_b1_bc
   use ModUserAwsomZdiInput, ONLY: read_zdi_user_command
   use ModUserAwsomZdiPlot, ONLY: set_awsom_zdi_plot_var
   use ModUserAwsomZdiRuntime, ONLY: run_zdi_user_init_runtime
@@ -1182,14 +1183,9 @@ module ModUser
           end if
 #endif
 
-          ! Default AWSoM inner BC keeps B1r=0. In ZDI BC mode, impose ZDI Br
-          ! and use TypeZdiBoundary only for the tangential components.
+          call compose_zdi_inner_b1_bc(DoUseZdiBoundary, Br1_D, Bt1_D, B1Face_D)
           do i = MinI, 0
-             if(DoUseZdiBoundary)then
-                State_VGB(Bx_:Bz_,i,j,k,iBlock) = Br1_D + Bt1_D
-             else
-                State_VGB(Bx_:Bz_,i,j,k,iBlock) = Bt1_D
-             end if
+             State_VGB(Bx_:Bz_,i,j,k,iBlock) = B1Face_D
           end do
 
           do iFluid = 1, nFluid
