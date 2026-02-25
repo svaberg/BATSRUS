@@ -251,13 +251,13 @@ br bphi btheta		NameVars
 z=0 VAR tec		StringPlot
 20			DnSavePlot
 -1.			DtSavePlot
-rho ux uy uz ti bx by bz I01 I02 p
-g rbody
+rho ux uy uz ti bx by bz I01 I02 p		NameVars
+{default}		NamePars
 3d VAR tec		StringPlot
 100			DnSavePlot
 -1.			DtSavePlot
-rho ux uy uz ti bx by bz I01 I02 p
-g rbody
+rho ux uy uz ti bx by bz I01 I02 p		NameVars
+g rbody		NamePars
 
 #SAVEINITIAL
 F			DoSaveInitial
