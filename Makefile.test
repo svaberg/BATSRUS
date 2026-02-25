@@ -36,6 +36,7 @@ test_help:
 	@echo "    test_awsom                 (run AWSoM corona test)"
 	@echo "    test_awsom_zdiselftest     (run AWSoM ZDI startup self-test dump)"
 	@echo "    test_awsom_zdiselftest_hires (run AWSoM ZDI startup self-test dump, 0.5 deg)"
+	@echo "    test_awsom_zdiselftest_hires_render (render PNG from hi-res self-test dump)"
 	@echo "    test_awsom_zdipfss         (run AWSoM PFSS+ZDI free/clamp experiment pair)"
 	@echo "    test_awsom_bvector         (run AWSoM with vector B field)"
 	@echo "    test_awsom_gpu             (run AWSoM corona test on GPU)"
@@ -1300,9 +1301,16 @@ test_awsom_zdiselftest_hires_check:
 	@echo "[selftest_hires] checking expected ZDI startup dump outputs" > test_awsom_zdiselftest_hires.diff
 	@ls ${TESTDIR_AWSOM_ZDISELFTEST_HIRES}/zdi_selftest_points_hires0p5.out >/dev/null
 	@ls ${TESTDIR_AWSOM_ZDISELFTEST_HIRES}/zdi_selftest_field_2d_hires0p5.out >/dev/null
+	@test `ls ${TESTDIR_AWSOM_ZDISELFTEST_HIRES}/zdi_selftest* | wc -l` -eq 2
 	@echo "[selftest_hires] image header:" `head -n 1 ${TESTDIR_AWSOM_ZDISELFTEST_HIRES}/zdi_selftest_field_2d_hires0p5.out` >> test_awsom_zdiselftest_hires.diff
 	@echo "[selftest_hires] file count:" `ls ${TESTDIR_AWSOM_ZDISELFTEST_HIRES}/zdi_selftest* | wc -l` >> test_awsom_zdiselftest_hires.diff
 	ls -l test_awsom_zdiselftest_hires.diff
+
+test_awsom_zdiselftest_hires_render:
+	python3 Scripts/ZDI/plot_zdi_selftest_images.py \
+		${TESTDIR_AWSOM_ZDISELFTEST_HIRES}/zdi_selftest_field_2d_hires0p5.out \
+		--output-dir ${TESTDIR_AWSOM_ZDISELFTEST_HIRES}/zdi_selftest_png \
+		--title "ZDI startup self-test (0.5 deg)"
 
 test_awsom_zdipfss:
 	touch test_awsom_zdipfss.diff

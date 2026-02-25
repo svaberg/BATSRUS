@@ -189,6 +189,13 @@ High-resolution visual-comparison variant (`0.5°`, no single-coeff sweep):
 make test_awsom_zdiselftest_hires
 ```
 
+Optional render helper (uses the in-repo Python script to make a PNG from the
+hi-res startup dump):
+
+```bash
+make test_awsom_zdiselftest_hires_render
+```
+
 Expected outputs in the run directory include:
 
 - `zdi_selftest_points.out`
