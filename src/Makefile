@@ -113,6 +113,7 @@ OBJECTS = \
 	ModUserEmpty.o \
 	ModUserInterface.o \
 	ModZdiMagnetogram.o \
+	ModUserAwsomZdiSelfTest.o \
 	ModUser.o \
 	ModViscosity.o \
 	ModWaves.o \
