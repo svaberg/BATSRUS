@@ -12,13 +12,11 @@ module ModUser
        tChromo => TeChromosphere
   use ModTurbulence, ONLY: PoyntingFluxPerB, PoyntingFluxPerBSi, &
        IsOnAwRepresentative
-  use ModUserAwsomZdiConfig, ONLY: UseZdiBoundary, read_zdi_magnetogram_param, &
-       get_zdi_boundary_mix, &
-       read_zdi_boundary_param
+  use ModUserAwsomZdiConfig, ONLY: UseZdiBoundary, get_zdi_boundary_mix
   use ModUserAwsomZdiBoundary, ONLY: apply_zdi_boundary_target_cpu
+  use ModUserAwsomZdiInput, ONLY: read_zdi_user_command
   use ModUserAwsomZdiPlot, ONLY: set_awsom_zdi_plot_var
   use ModUserAwsomZdiRuntime, ONLY: run_zdi_user_init_runtime
-  use ModUserAwsomZdiSelfTest, ONLY: read_zdi_selftest_param
   use ModUserEmpty,                                     &
        IMPLEMENTED1 => user_read_inputs,                &
        IMPLEMENTED2 => user_init_session,               &
@@ -102,7 +100,7 @@ module ModUser
 
     character(len=100) :: NameCommand
     integer:: iDir
-    logical:: DoTest
+    logical:: DoTest, IsZdiCommand
     character(len=*), parameter:: NameSub = 'user_read_inputs'
     !--------------------------------------------------------------------------
     call test_start(NameSub, DoTest)
@@ -115,6 +113,9 @@ module ModUser
     do
        if(.not.read_line() ) EXIT
        if(.not.read_command(NameCommand)) CYCLE
+
+       call read_zdi_user_command(NameCommand, IsZdiCommand)
+       if(IsZdiCommand) CYCLE
 
        select case(NameCommand)
           ! This command is used when the inner boundary is the chromosphere
@@ -158,15 +159,6 @@ module ModUser
           call read_var('IsUr0Jet', IsUr0Jet)
           call read_var('DoUpdateParkerJet', DoUpdateParkerJet)
           call read_var('BrampJet', BrampJet)
-
-       case('#ZDIMAGNETOGRAM')
-          call read_zdi_magnetogram_param()
-
-       case('#ZDIBOUNDARY')
-          call read_zdi_boundary_param()
-
-       case('#ZDISELFTEST')
-          call read_zdi_selftest_param()
 
        case("#STITCH")
           call read_var('ZetaSI', ZetaSI)

@@ -115,6 +115,7 @@ OBJECTS = \
 	ModZdiMagnetogram.o \
 	ModUserAwsomZdiConfig.o \
 	ModUserAwsomZdiBoundary.o \
+	ModUserAwsomZdiInput.o \
 	ModUserAwsomZdiPlot.o \
 	ModUserAwsomZdiRuntime.o \
 	ModUserAwsomZdiSelfTest.o \
