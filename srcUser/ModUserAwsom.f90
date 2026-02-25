@@ -17,10 +17,11 @@ module ModUser
        UseZdiBoundary, UseZdiBoundaryRadial, TypeZdiBoundary, TypeZdiRamp, &
        ZdiBcStrength, ZdiBcScale, ZdiRampIterStart, ZdiRampIterStop, &
        ZdiRampStart, ZdiRampStop, read_zdi_magnetogram_param, &
-       get_zdi_boundary_ramp_mix, &
+       get_zdi_boundary_ramp_mix, update_zdi_scale_cache, &
        read_zdi_boundary_param
   use ModUserAwsomZdiBoundary, ONLY: apply_zdi_boundary_target_cpu
   use ModUserAwsomZdiPlot, ONLY: set_awsom_zdi_plot_var
+  use ModUserAwsomZdiRuntime, ONLY: run_zdi_user_init_runtime
   use ModUserAwsomZdiSelfTest, ONLY: UseZdiSelfTest, read_zdi_selftest_param, &
        run_zdi_selftest_startup_dump
   use ModUserEmpty,                                     &
@@ -239,9 +240,7 @@ module ModUser
     use ModPhysics, ONLY: ElectronTemperatureRatio, AverageIonCharge, &
          Si2No_V, UnitTemperature_, UnitN_, UnitB_, BodyNDim_I, BodyTDim_I, &
          UnitX_, UnitT_, Gamma, UnitEnergyDens_, UnitU_, Io2No_V
-    use ModZdiMagnetogram, ONLY: read_zdi_coeff_file, zdi_is_loaded, &
-         zdi_uses_donati_conjugation, nZdiOrder, nZdiCoeffPerSet, &
-         StringZdiHeader, ZdiHeader_I
+    use ModZdiMagnetogram, ONLY: zdi_is_loaded
 
     real, parameter :: CoulombLog = 20.0
     real :: QparPerQtotal, QperpPerQtotal
@@ -284,8 +283,7 @@ module ModUser
     BmaxJet = BmaxJetSi*Si2No_V(UnitB_)
     FlowSpeedJet = FlowSpeedJetSi &
          * Si2No_V(UnitX_)**2 / Si2No_V(UnitT_)/Si2No_V(UnitB_)
-    ZdiFieldScaleNo = ZdiFieldScaleIo*Io2No_V(UnitB_)
-    ZdiLonShift = ZdiLonShiftDeg*cDegToRad
+    call update_zdi_scale_cache(Io2No_V(UnitB_), cDegToRad)
 
     ! TeFraction is used for ideal EOS:
     if(UseElectronPressure)then
@@ -347,47 +345,12 @@ module ModUser
        end if
     end if
     if(iProc == 0)then
-       if(UseZdiMagnetogram)then
-          call write_prefix; write(iUnitOut,*) &
-               'Reading ZDI coefficient file: ', trim(NameZdiCoeffFile)
-       end if
        call write_prefix; write(iUnitOut,*) ''
        call write_prefix; write(iUnitOut,*) 'user_init_session finished'
        call write_prefix; write(iUnitOut,*) ''
     end if
 
-    if(UseZdiMagnetogram)then
-       call read_zdi_coeff_file(trim(NameZdiCoeffFile))
-       if(iProc == 0)then
-          call write_prefix; write(iUnitOut,*) 'ZDI header: ', trim(StringZdiHeader)
-          call write_prefix; write(iUnitOut,*) 'ZDI ints: ', ZdiHeader_I
-          call write_prefix; write(iUnitOut,*) 'ZDI order / coeff per set: ', &
-               nZdiOrder, nZdiCoeffPerSet
-          call write_prefix; write(iUnitOut,*) &
-               'ZDI conventions: normalized Y/X/Z basis, Btheta=co-latitude, '//&
-               'Blat=-Btheta'
-          call write_prefix; write(iUnitOut,*) &
-               'ZDI Donati -3 conjugation applied = ', zdi_uses_donati_conjugation()
-          call write_prefix; write(iUnitOut,*) 'ZDI scales (Io,No)=', &
-               ZdiFieldScaleIo, ZdiFieldScaleNo
-          call write_prefix; write(iUnitOut,*) 'ZDI lon shift [deg]=', ZdiLonShiftDeg
-       end if
-       if(UseZdiSelfTest) call run_zdi_selftest_startup_dump( &
-            trim(NameZdiCoeffFile), ZdiFieldScaleIo, ZdiLonShiftDeg, ZdiLonShift)
-    end if
-    if(UseZdiBoundary .and. .not.zdi_is_loaded()) then
-       call stop_mpi('UseZdiBoundary requires UseZdiMagnetogram and a valid file')
-    end if
-    if(UseZdiBoundary .and. iProc == 0)then
-       call write_prefix; write(iUnitOut,*) 'ZDI boundary mode=', trim(TypeZdiBoundary), &
-            ', ramp=', trim(TypeZdiRamp), ', strength=', ZdiBcStrength, &
-            ', scale=', ZdiBcScale
-       call write_prefix; write(iUnitOut,*) &
-            'ZDI Br is imposed when UseZdiBoundary=T; legacy radial flag = ', &
-            UseZdiBoundaryRadial
-       call write_prefix; write(iUnitOut,*) 'ZDI ramp iter/time=', &
-            ZdiRampIterStart, ZdiRampIterStop, ZdiRampStart, ZdiRampStop
-    end if
+    call run_zdi_user_init_runtime()
 
     !$acc update device(tChromo, UseFloatRadialVelocity, ChromoN)
 

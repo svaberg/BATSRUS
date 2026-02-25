@@ -116,6 +116,7 @@ OBJECTS = \
 	ModUserAwsomZdiConfig.o \
 	ModUserAwsomZdiBoundary.o \
 	ModUserAwsomZdiPlot.o \
+	ModUserAwsomZdiRuntime.o \
 	ModUserAwsomZdiSelfTest.o \
 	ModUser.o \
 	ModViscosity.o \

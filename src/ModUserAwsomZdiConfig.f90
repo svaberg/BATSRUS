@@ -26,6 +26,7 @@ module ModUserAwsomZdiConfig
   public :: read_zdi_magnetogram_param
   public :: read_zdi_boundary_param
   public :: get_zdi_boundary_ramp_mix
+  public :: update_zdi_scale_cache
 
 contains
 
@@ -97,5 +98,12 @@ contains
        MixZdi = 0.0
     end select
   end subroutine get_zdi_boundary_ramp_mix
+
+  subroutine update_zdi_scale_cache(UnitBNoPerIo, DegToRad)
+    real, intent(in) :: UnitBNoPerIo, DegToRad
+    !--------------------------------------------------------------------------
+    ZdiFieldScaleNo = ZdiFieldScaleIo * UnitBNoPerIo
+    ZdiLonShift     = ZdiLonShiftDeg * DegToRad
+  end subroutine update_zdi_scale_cache
 
 end module ModUserAwsomZdiConfig
