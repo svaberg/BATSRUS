@@ -1,0 +1,23 @@
+#INCLUDE
+Param/ZDI/PARAM.AwsomZdiSelfTest.in
+
+#DESCRIPTION
+Param/ZDI/PARAM.AwsomZdiSelfTestHiRes.in		StringDescription
+
+#USERINPUTBEGIN -----------------------------------
+#ZDISELFTEST
+T			UseZdiSelfTest
+Param/ZDI/ZDI.selftest.points.dat			NameZdiSelfTestPointFile
+zdi_selftest_points_hires0p5.out			NameZdiSelfTestDumpFile
+zdi_selftest_field_2d_hires0p5.out			NameZdiSelfTestImageFile
+F			DoZdiSelfTestSingleCoeff
+zdi_selftest_singlecoeff_points_hires0p5.out			NameZdiSelfTestCoeffDumpFile
+zdi_selftest_singlecoeff_hires0p5			NameZdiSelfTestCoeffImagePrefix
+2			ZdiSelfTestCoeffLmax
+0.0			ZdiSelfTestLonMinDeg
+360.0			ZdiSelfTestLonMaxDeg
+0.5			ZdiSelfTestDLonDeg
+-90.0			ZdiSelfTestLatMinDeg
+90.0			ZdiSelfTestLatMaxDeg
+0.5			ZdiSelfTestDLatDeg
+#USERINPUTEND -------------------------------------
