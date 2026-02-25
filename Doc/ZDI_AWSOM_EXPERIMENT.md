@@ -16,6 +16,8 @@ This branch adds:
 - experimental AWSoM inner-boundary forcing modes (`clamp`, `nudge`) for
   tangential components, plus optional radial-component forcing
 - Python tools to read `idl_ascii` shell plots and make magnetic-field movies
+- startup ZDI self-test dumps (points + 2D arrays + single-coefficient sweep)
+- `Makefile.test` scaffolding for PFSS+ZDI runs and ZDI self-test runs
 
 ## ZDI Coefficient File Format (supported)
 
@@ -63,9 +65,19 @@ is matched to `ZDIpy/core/magneticGeom.py` with the following conventions:
 
 This matches the ZDIpy convention where plotting often uses `Blat = -Bclat`.
 
+Status:
+
+- startup self-test point comparisons now match ZDIpy for all three components
+  (`Br`, `Bphi`, `Btheta`) after fixing the tangential `dP/dtheta` sign path
+- single-coefficient sweeps (`alpha/beta/gamma`, real/imag, up to `l<=2`) are
+  used as the regression-style sanity check for sign/basis mistakes
+
 ## AWSoM User Input: ZDI Controls
 
 The new controls live in the AWSoM user-module path (`srcUser/ModUserAwsom.f90`).
+Most ZDI-specific implementation code now lives in dedicated helper modules in
+`srcUser/` (self-test, config parsing, runtime setup, plot vars, boundary helper),
+with `ModUserAwsom.f90` acting as a thin hook/dispatcher.
 
 ### `#ZDIMAGNETOGRAM`
 
@@ -150,6 +162,36 @@ HGR                     TypeCoord
 br bphi btheta zdibr zdibphi zdibtheta  NameVars
 {default}               NamePars
 ```
+
+## Canonical Startup Self-Test (pure ZDI)
+
+Canonical self-test config (versioned):
+
+- `/Users/dagfev/Documents/SWMFsoftware/BATSRUS-zdi/Param/ZDI/PARAM.AwsomZdiSelfTest.in`
+
+This run is intended to validate the BATSRUS ZDI evaluator itself (startup dump),
+not PFSS initialization or boundary evolution:
+
+- `#HARMONICSFILE` path disabled
+- `#ZDIBOUNDARY` disabled
+- `#ZDISELFTEST` enabled
+- `#STOP` set to one iteration
+
+`Makefile.test` target (compile/rundir/run/check style):
+
+```bash
+make test_awsom_zdiselftest
+```
+
+Expected outputs in the run directory include:
+
+- `zdi_selftest_points.out`
+- `zdi_selftest_field_2d.out`
+- `zdi_selftest_singlecoeff_points.out`
+- `zdi_selftest_singlecoeff_*.out` (single-coefficient images)
+
+The check target currently asserts the expected file count (`33`) for the
+default `l<=2` single-coefficient sweep.
 
 ## Plot Format Backend Status (shell `#SAVEPLOT`)
 
