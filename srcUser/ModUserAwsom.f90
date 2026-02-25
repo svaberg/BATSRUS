@@ -13,7 +13,7 @@ module ModUser
   use ModTurbulence, ONLY: PoyntingFluxPerB, PoyntingFluxPerBSi, &
        IsOnAwRepresentative
   use ModUserAwsomZdiConfig, ONLY: UseZdiBoundary, read_zdi_magnetogram_param, &
-       get_zdi_boundary_mix, update_zdi_scale_cache, &
+       get_zdi_boundary_mix, &
        read_zdi_boundary_param
   use ModUserAwsomZdiBoundary, ONLY: apply_zdi_boundary_target_cpu
   use ModUserAwsomZdiPlot, ONLY: set_awsom_zdi_plot_var
@@ -234,7 +234,7 @@ module ModUser
     use ModNumConst, ONLY: cTwoPi, cDegToRad
     use ModPhysics, ONLY: ElectronTemperatureRatio, AverageIonCharge, &
          Si2No_V, UnitTemperature_, UnitN_, UnitB_, BodyNDim_I, BodyTDim_I, &
-         UnitX_, UnitT_, Gamma, UnitEnergyDens_, UnitU_, Io2No_V
+         UnitX_, UnitT_, Gamma, UnitEnergyDens_, UnitU_
     real, parameter :: CoulombLog = 20.0
     real :: QparPerQtotal, QperpPerQtotal
     logical:: DoTest
@@ -276,8 +276,6 @@ module ModUser
     BmaxJet = BmaxJetSi*Si2No_V(UnitB_)
     FlowSpeedJet = FlowSpeedJetSi &
          * Si2No_V(UnitX_)**2 / Si2No_V(UnitT_)/Si2No_V(UnitB_)
-    call update_zdi_scale_cache(Io2No_V(UnitB_), cDegToRad)
-
     ! TeFraction is used for ideal EOS:
     if(UseElectronPressure)then
        ! Pe = ne*Te (dimensionless) and n=rho/ionmass

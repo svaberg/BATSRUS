@@ -13,6 +13,8 @@ contains
     use BATL_lib, ONLY: iProc
     use ModIO, ONLY: write_prefix, iUnitOut
     use ModBatsrusUtility, ONLY: stop_mpi
+    use ModNumConst, ONLY: cDegToRad
+    use ModPhysics, ONLY: Io2No_V, UnitB_
     use ModZdiMagnetogram, ONLY: read_zdi_coeff_file, zdi_is_loaded, &
          zdi_uses_donati_conjugation, nZdiOrder, nZdiCoeffPerSet, &
          StringZdiHeader, ZdiHeader_I
@@ -20,10 +22,12 @@ contains
          ZdiFieldScaleIo, ZdiFieldScaleNo, ZdiLonShiftDeg, ZdiLonShift, &
          UseZdiBoundary, UseZdiBoundaryRadial, TypeZdiBoundary, TypeZdiRamp, &
          ZdiBcStrength, ZdiBcScale, ZdiRampIterStart, ZdiRampIterStop, &
-         ZdiRampStart, ZdiRampStop
+         ZdiRampStart, ZdiRampStop, update_zdi_scale_cache
     use ModUserAwsomZdiSelfTest, ONLY: UseZdiSelfTest, run_zdi_selftest_startup_dump
 
     !--------------------------------------------------------------------------
+    call update_zdi_scale_cache(Io2No_V(UnitB_), cDegToRad)
+
     if(iProc == 0)then
        if(UseZdiMagnetogram)then
           call write_prefix; write(iUnitOut,*) &
