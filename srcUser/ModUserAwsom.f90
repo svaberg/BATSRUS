@@ -12,6 +12,12 @@ module ModUser
        tChromo => TeChromosphere
   use ModTurbulence, ONLY: PoyntingFluxPerB, PoyntingFluxPerBSi, &
        IsOnAwRepresentative
+  use ModUserAwsomZdiConfig, ONLY: UseZdiMagnetogram, NameZdiCoeffFile, &
+       ZdiFieldScaleIo, ZdiFieldScaleNo, ZdiLonShiftDeg, ZdiLonShift, &
+       UseZdiBoundary, UseZdiBoundaryRadial, TypeZdiBoundary, TypeZdiRamp, &
+       ZdiBcStrength, ZdiBcScale, ZdiRampIterStart, ZdiRampIterStop, &
+       ZdiRampStart, ZdiRampStop, read_zdi_magnetogram_param, &
+       read_zdi_boundary_param
   use ModUserAwsomZdiSelfTest, ONLY: UseZdiSelfTest, read_zdi_selftest_param, &
        run_zdi_selftest_startup_dump
   use ModUserEmpty,                                     &
@@ -86,26 +92,7 @@ module ModUser
 
   character(len=20):: TypeRadioEmission = 'simplistic'
 
-  ! Direct ZDI coefficient support (experimental, user-module path)
-  logical :: UseZdiMagnetogram = .false.
-  character(len=200) :: NameZdiCoeffFile = ''
-  real    :: ZdiFieldScaleIo = 1.0
-  real    :: ZdiFieldScaleNo = 1.0
-  real    :: ZdiLonShiftDeg = 0.0
-  real    :: ZdiLonShift = 0.0
-
-  logical :: UseZdiBoundary = .false.
-  logical :: UseZdiBoundaryRadial = .false.
-  character(len=20) :: TypeZdiBoundary = 'off'   ! off/clamp/nudge
-  character(len=20) :: TypeZdiRamp = 'cosine'    ! none/linear/cosine
-  real    :: ZdiBcStrength = 1.0
-  real    :: ZdiBcScale = 1.0
-  integer :: ZdiRampIterStart = 0
-  integer :: ZdiRampIterStop  = 0
-  real    :: ZdiRampStart = -1.0
-  real    :: ZdiRampStop  = -1.0
-
-contains
+  contains
   !============================================================================
   subroutine user_read_inputs
 
@@ -174,26 +161,10 @@ contains
           call read_var('BrampJet', BrampJet)
 
        case('#ZDIMAGNETOGRAM')
-          call read_var('UseZdiMagnetogram', UseZdiMagnetogram)
-          if(UseZdiMagnetogram)then
-             call read_var('NameZdiCoeffFile', NameZdiCoeffFile)
-             call read_var('ZdiFieldScaleIo', ZdiFieldScaleIo)
-             call read_var('ZdiLonShiftDeg', ZdiLonShiftDeg)
-          end if
+          call read_zdi_magnetogram_param()
 
        case('#ZDIBOUNDARY')
-          call read_var('UseZdiBoundary', UseZdiBoundary)
-          if(UseZdiBoundary)then
-             call read_var('UseZdiBoundaryRadial', UseZdiBoundaryRadial)
-             call read_var('TypeZdiBoundary', TypeZdiBoundary)
-             call read_var('TypeZdiRamp',     TypeZdiRamp)
-             call read_var('ZdiBcStrength',   ZdiBcStrength)
-             call read_var('ZdiBcScale',      ZdiBcScale)
-             call read_var('ZdiRampIterStart', ZdiRampIterStart)
-             call read_var('ZdiRampIterStop',  ZdiRampIterStop)
-             call read_var('ZdiRampStart',    ZdiRampStart)
-             call read_var('ZdiRampStop',     ZdiRampStop)
-          end if
+          call read_zdi_boundary_param()
 
        case('#ZDISELFTEST')
           call read_zdi_selftest_param()
