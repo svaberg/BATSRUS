@@ -183,12 +183,23 @@ not PFSS initialization or boundary evolution:
 make test_awsom_zdiselftest
 ```
 
+High-resolution visual-comparison variant (`0.5°`, no single-coeff sweep):
+
+```bash
+make test_awsom_zdiselftest_hires
+```
+
 Expected outputs in the run directory include:
 
 - `zdi_selftest_points.out`
 - `zdi_selftest_field_2d.out`
 - `zdi_selftest_singlecoeff_points.out`
 - `zdi_selftest_singlecoeff_*.out` (single-coefficient images)
+
+For the hi-res target, the key outputs are:
+
+- `zdi_selftest_points_hires0p5.out`
+- `zdi_selftest_field_2d_hires0p5.out`
 
 The check target currently asserts the expected file count (`33`) for the
 default `l<=2` single-coefficient sweep.
