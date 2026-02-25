@@ -12,18 +12,13 @@ module ModUser
        tChromo => TeChromosphere
   use ModTurbulence, ONLY: PoyntingFluxPerB, PoyntingFluxPerBSi, &
        IsOnAwRepresentative
-  use ModUserAwsomZdiConfig, ONLY: UseZdiMagnetogram, NameZdiCoeffFile, &
-       ZdiFieldScaleIo, ZdiFieldScaleNo, ZdiLonShiftDeg, ZdiLonShift, &
-       UseZdiBoundary, UseZdiBoundaryRadial, TypeZdiBoundary, TypeZdiRamp, &
-       ZdiBcStrength, ZdiBcScale, ZdiRampIterStart, ZdiRampIterStop, &
-       ZdiRampStart, ZdiRampStop, read_zdi_magnetogram_param, &
-       get_zdi_boundary_ramp_mix, update_zdi_scale_cache, &
+  use ModUserAwsomZdiConfig, ONLY: UseZdiBoundary, read_zdi_magnetogram_param, &
+       get_zdi_boundary_mix, update_zdi_scale_cache, &
        read_zdi_boundary_param
   use ModUserAwsomZdiBoundary, ONLY: apply_zdi_boundary_target_cpu
   use ModUserAwsomZdiPlot, ONLY: set_awsom_zdi_plot_var
   use ModUserAwsomZdiRuntime, ONLY: run_zdi_user_init_runtime
-  use ModUserAwsomZdiSelfTest, ONLY: UseZdiSelfTest, read_zdi_selftest_param, &
-       run_zdi_selftest_startup_dump
+  use ModUserAwsomZdiSelfTest, ONLY: read_zdi_selftest_param
   use ModUserEmpty,                                     &
        IMPLEMENTED1 => user_read_inputs,                &
        IMPLEMENTED2 => user_init_session,               &
@@ -107,7 +102,7 @@ module ModUser
 
     character(len=100) :: NameCommand
     integer:: iDir
-    logical:: DoTest, DoUseZdiBoundary
+    logical:: DoTest
     character(len=*), parameter:: NameSub = 'user_read_inputs'
     !--------------------------------------------------------------------------
     call test_start(NameSub, DoTest)
@@ -240,11 +235,9 @@ module ModUser
     use ModPhysics, ONLY: ElectronTemperatureRatio, AverageIonCharge, &
          Si2No_V, UnitTemperature_, UnitN_, UnitB_, BodyNDim_I, BodyTDim_I, &
          UnitX_, UnitT_, Gamma, UnitEnergyDens_, UnitU_, Io2No_V
-    use ModZdiMagnetogram, ONLY: zdi_is_loaded
-
     real, parameter :: CoulombLog = 20.0
     real :: QparPerQtotal, QperpPerQtotal
-    logical:: DoTest, DoUseZdiBoundary
+    logical:: DoTest
     character(len=*), parameter:: NameSub = 'user_init_session'
     !--------------------------------------------------------------------------
     call test_start(NameSub, DoTest)
@@ -1096,7 +1089,6 @@ module ModUser
     use ModCoordTransform, ONLY: rot_xyz_sph
     use ModNumConst, ONLY: cPi
     use ModIO, ONLY: IsRestart
-    use ModZdiMagnetogram, ONLY: zdi_is_loaded
 
     integer,          intent(in)  :: iBlock, iSide
     character(len=*), intent(in)  :: TypeBc
@@ -1141,7 +1133,7 @@ module ModUser
     real    :: FullB_D(3), SignBr
     real    :: U, Bdir_D(3)
     real    :: Gamma
-    real    :: FrampZdi, MixZdi
+    real    :: MixZdi
     real    :: B1Face_D(3)
 
     logical:: DoTest, DoUseZdiBoundary
@@ -1157,7 +1149,6 @@ module ModUser
 
     IsFound = .true.
 
-    FrampZdi = 0.0
     MixZdi   = 0.0
     DoUseZdiBoundary = .false.
 
@@ -1182,10 +1173,7 @@ module ModUser
        end select
 #endif
 
-       DoUseZdiBoundary = UseZdiBoundary .and. zdi_is_loaded()
-       if(DoUseZdiBoundary)then
-          call get_zdi_boundary_ramp_mix(nIteration, tSimulation, FrampZdi, MixZdi)
-       end if
+       call get_zdi_boundary_mix(nIteration, tSimulation, DoUseZdiBoundary, MixZdi)
 
        !$acc loop vector collapse(2) independent &
        !$acc private(rUnit_D, Br1_D, Bt1_D, FullB_D)

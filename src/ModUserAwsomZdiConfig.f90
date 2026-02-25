@@ -26,6 +26,7 @@ module ModUserAwsomZdiConfig
   public :: read_zdi_magnetogram_param
   public :: read_zdi_boundary_param
   public :: get_zdi_boundary_ramp_mix
+  public :: get_zdi_boundary_mix
   public :: update_zdi_scale_cache
 
 contains
@@ -98,6 +99,25 @@ contains
        MixZdi = 0.0
     end select
   end subroutine get_zdi_boundary_ramp_mix
+
+  subroutine get_zdi_boundary_mix(nIteration, tSimulation, DoUseZdiBoundary, MixZdi)
+    use ModZdiMagnetogram, ONLY: zdi_is_loaded
+
+    integer, intent(in) :: nIteration
+    real, intent(in) :: tSimulation
+    logical, intent(out) :: DoUseZdiBoundary
+    real, intent(out) :: MixZdi
+
+    real :: FrampZdi
+    !--------------------------------------------------------------------------
+    DoUseZdiBoundary = UseZdiBoundary .and. zdi_is_loaded()
+    if(.not.DoUseZdiBoundary)then
+       MixZdi = 0.0
+       RETURN
+    end if
+
+    call get_zdi_boundary_ramp_mix(nIteration, tSimulation, FrampZdi, MixZdi)
+  end subroutine get_zdi_boundary_mix
 
   subroutine update_zdi_scale_cache(UnitBNoPerIo, DegToRad)
     real, intent(in) :: UnitBNoPerIo, DegToRad
