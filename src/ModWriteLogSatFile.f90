@@ -153,7 +153,10 @@ contains
        if (nFluxVar > 0) then
           call split_string(StringLogRadius, MaxLogR, NameLogR_I, nLogR)
           do i=1,nLogR
-             read(NameLogR_I(i),*) LogR_I(i)
+             read(NameLogR_I(i),*, iostat=iError) LogR_I(i)
+             if(iError /= 0) call stop_mpi('ERROR in write_logfile: '// &
+                  'could not read StringLogRadius token='// &
+                  trim(NameLogR_I(i)))
           end do
        end if
        StringTime = TypeLogTime
@@ -558,6 +561,9 @@ contains
 
        iVarTot = iVarTot + 1
        call normalize_name_log_var(NameLogVar_I(iVar), NameLogVar)
+       if(DoTest .and. iProc == 0) &
+            write(*,'(a,i8,a,i4,2a)') 'set_logvar start nStep=', &
+            nStep, ' iVar=', iVar, ' name=', trim(NameLogVar)
 
        ! If we are a satellite and not a logfile (iSat>=1) then we should
        ! do only satellite variables so append a 'sat' to the end of the
@@ -567,6 +573,9 @@ contains
        else
           call set_log_var
        end if
+       if(DoTest .and. iProc == 0) &
+            write(*,'(a,i8,a,i4,2a)') 'set_logvar done  nStep=', &
+            nStep, ' iVar=', iVar, ' name=', trim(NameLogVar)
     end do
 
     call test_stop(NameSub, DoTest)
@@ -1963,6 +1972,7 @@ contains
     real   :: dTheta, dPhi, Phi, Theta, SinTheta
 
     real:: Array_G(0:nI+1,j0_:nJp1_,k0_:nKp1_)
+    character(len=200):: StringError
 
     ! Store cartesian coordinates for sake of efficiency
     ! The x and y depend on iPhi,iTheta while z only depends on iTheta
@@ -2007,9 +2017,17 @@ contains
 
           ! Find the radial index just after Radius
           i2=0
-          do while ( Radius > r_GB(i2,1,1,iBlock))
+          do while ( i2 < nI+1 .and. Radius > r_GB(i2,1,1,iBlock))
              i2 = i2 + 1
           end do
+          if(i2 <= 0 .or. i2 > nI+1)then
+             write(StringError,'(a,es13.5,a,i0,a,2es13.5)') &
+                  'ERROR in calc_sphere: Radius=', Radius, &
+                  ' outside radial interpolation range in block=', iBlock, &
+                  ' rGhostMin/rGhostMax=', r_GB(0,1,1,iBlock), &
+                  r_GB(nI+1,1,1,iBlock)
+             call stop_mpi(trim(StringError))
+          end if
           i1 = i2 - 1
 
           Dr = (Radius - r_GB(i1, 1, 1, iBlock)) &
