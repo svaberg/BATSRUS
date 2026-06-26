@@ -22,6 +22,7 @@ module ModUserAwsomZdiConfig
   integer, public :: ZdiRampIterStop  = 0
   real, public :: ZdiRampStart = -1.0
   real, public :: ZdiRampStop  = -1.0
+  integer :: iZdiRampProgressLogged = -1
 
   public :: read_zdi_magnetogram_param
   public :: read_zdi_boundary_param
@@ -46,6 +47,7 @@ contains
     use ModReadParam, ONLY: read_var
     !--------------------------------------------------------------------------
     call read_var('UseZdiBoundary', UseZdiBoundary)
+    iZdiRampProgressLogged = -1
     if(.not.UseZdiBoundary) RETURN
 
     call read_var('UseZdiBoundaryRadial', UseZdiBoundaryRadial)
@@ -117,7 +119,65 @@ contains
     end if
 
     call get_zdi_boundary_ramp_mix(nIteration, tSimulation, FrampZdi, MixZdi)
+    call log_zdi_ramp_progress(nIteration, tSimulation, FrampZdi, MixZdi)
   end subroutine get_zdi_boundary_mix
+
+  subroutine log_zdi_ramp_progress(nIteration, tSimulation, FrampZdi, MixZdi)
+    use BATL_lib, ONLY: iProc
+    use ModIO, ONLY: write_prefix, iUnitOut
+
+    integer, intent(in) :: nIteration
+    real, intent(in) :: tSimulation, FrampZdi, MixZdi
+
+    integer :: iProgress
+    real :: MixMax, Progress
+    logical :: DoLog
+    !--------------------------------------------------------------------------
+    if(iProc /= 0) RETURN
+    if(trim(TypeZdiBoundary) == 'off') RETURN
+    if(.not.zdi_ramp_has_started(nIteration, tSimulation)) RETURN
+
+    select case(trim(TypeZdiBoundary))
+    case('clamp')
+       MixMax = 1.0
+    case('nudge')
+       MixMax = min(1.0, max(0.0, ZdiBcStrength))
+    case default
+       MixMax = 0.0
+    end select
+    if(MixMax <= 0.0) RETURN
+
+    Progress = min(1.0, max(0.0, MixZdi/MixMax))
+    iProgress = min(10, int(10.0*Progress + 1.0e-5))
+    DoLog = iProgress > iZdiRampProgressLogged
+    if(.not.DoLog) RETURN
+
+    call write_prefix
+    write(iUnitOut,'(a,i3,a,2(a,es12.4),a,i10,a,es12.4,a,es12.4)') &
+         'ZDI ramp progress=', 10*iProgress, '%', &
+         ' MixZdi=', MixZdi, ' FrampZdi=', FrampZdi, &
+         ' nIteration=', nIteration, ' tSimulation=', tSimulation, &
+         ' MixMax=', MixMax
+
+    iZdiRampProgressLogged = iProgress
+  end subroutine log_zdi_ramp_progress
+
+  logical function zdi_ramp_has_started(nIteration, tSimulation)
+    integer, intent(in) :: nIteration
+    real, intent(in) :: tSimulation
+    !--------------------------------------------------------------------------
+    if(ZdiRampIterStop > ZdiRampIterStart)then
+       zdi_ramp_has_started = nIteration >= ZdiRampIterStart
+    else if(ZdiRampStop > ZdiRampStart)then
+       zdi_ramp_has_started = tSimulation >= ZdiRampStart
+    else if(ZdiRampIterStart > 0)then
+       zdi_ramp_has_started = nIteration >= ZdiRampIterStart
+    else if(ZdiRampStart >= 0.0)then
+       zdi_ramp_has_started = tSimulation >= ZdiRampStart
+    else
+       zdi_ramp_has_started = .true.
+    end if
+  end function zdi_ramp_has_started
 
   subroutine update_zdi_scale_cache(UnitBNoPerIo, DegToRad)
     real, intent(in) :: UnitBNoPerIo, DegToRad
