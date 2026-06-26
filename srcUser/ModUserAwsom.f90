@@ -531,7 +531,7 @@ module ModUser
     use ModCurrent, ONLY: get_current
 
     real, intent(out) :: VarValue
-    character(len=10), intent(in) :: TypeVar
+    character(len=*), intent(in) :: TypeVar
     real, optional, intent(in) :: Radius
 
     integer :: iBlock, i, j, k, iLoc_I(5)
