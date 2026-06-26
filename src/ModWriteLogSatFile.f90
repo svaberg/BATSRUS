@@ -592,7 +592,8 @@ contains
       use ModChromosphere, ONLY: get_tesi_c, TeSi_C
 
       ! Local variables
-      real:: Bx, By, Bz, RhoUx, RhoUy, RhoUz, bDotB, bDotU, Value
+      real:: Bx, By, Bz, Br, RhoUx, RhoUy, RhoUz, RhoUr
+      real:: bDotB, bDotU, Value
       real:: Current_D(3)
       real:: FullB_DG(3,0:nI+1,0:nJ+1,0:nK+1)
       real:: Convert_DD(3,3)
@@ -1068,6 +1069,38 @@ contains
             end do
             LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
          end do
+      case('rhooutflx')
+         ! outward-only mass flux: integral max(rho*U_R,0)
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUr = sum(State_VGB(iRhoUx:iRhoUz,i,j,k,iBlock) &
+                       *Xyz_DGB(:,i,j,k,iBlock))/r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = max(RhoUr, 0.0)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+      case('rhoinflx')
+         ! inward-only mass flux: integral min(rho*U_R,0)
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUr = sum(State_VGB(iRhoUx:iRhoUz,i,j,k,iBlock) &
+                       *Xyz_DGB(:,i,j,k,iBlock))/r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = min(RhoUr, 0.0)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
       case('dstflx')
          ! B1z
          iVarTot = iVarTot - 1
@@ -1142,6 +1175,417 @@ contains
                end do; end do; end do
             end do
             LogVar_I(iVarTot) = calc_sphere('integrate',360, r,Tmp1_GB)
+         end do
+
+      case('jxdynflx')
+         ! x-component of torque from dynamic (matter) stress
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(y_,i,j,k,iBlock)*RhoUz &
+                       - Xyz_DGB(z_,i,j,k,iBlock)*RhoUy ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+      case('jxoutdynflx')
+         ! x-component of outward-only dynamic torque, using max(rho*U_R,0)
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  RhoUr = max(RhoUr, 0.0)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(y_,i,j,k,iBlock)*RhoUz &
+                       - Xyz_DGB(z_,i,j,k,iBlock)*RhoUy ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+      case('jxindynflx')
+         ! x-component of inward-only dynamic torque, using min(rho*U_R,0)
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  RhoUr = min(RhoUr, 0.0)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(y_,i,j,k,iBlock)*RhoUz &
+                       - Xyz_DGB(z_,i,j,k,iBlock)*RhoUy ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+
+      case('jxmagflx')
+         ! x-component of torque from magnetic (Maxwell) stress
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock))CYCLE
+               FullB_DG = State_VGB(Bx_:Bz_,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               if(UseB0)FullB_DG = FullB_DG &
+                    +B0_DGB(:,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  Bx = FullB_DG(x_,i,j,k)
+                  By = FullB_DG(y_,i,j,k)
+                  Bz = FullB_DG(z_,i,j,k)
+                  Br = ( Bx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       + By*Xyz_DGB(y_,i,j,k,iBlock) &
+                       + Bz*Xyz_DGB(z_,i,j,k,iBlock) )/r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       -( Xyz_DGB(y_,i,j,k,iBlock)*Bz &
+                        - Xyz_DGB(z_,i,j,k,iBlock)*By )*Br
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+
+      case('jxflx')
+         ! x-component of total torque = dynamic + magnetic torque flux
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock))CYCLE
+               FullB_DG = State_VGB(Bx_:Bz_,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               if(UseB0)FullB_DG = FullB_DG &
+                    +B0_DGB(:,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  Bx = FullB_DG(x_,i,j,k)
+                  By = FullB_DG(y_,i,j,k)
+                  Bz = FullB_DG(z_,i,j,k)
+                  Br = ( Bx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       + By*Xyz_DGB(y_,i,j,k,iBlock) &
+                       + Bz*Xyz_DGB(z_,i,j,k,iBlock) )/r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(y_,i,j,k,iBlock)*RhoUz &
+                       - Xyz_DGB(z_,i,j,k,iBlock)*RhoUy ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock) &
+                       -( Xyz_DGB(y_,i,j,k,iBlock)*Bz &
+                        - Xyz_DGB(z_,i,j,k,iBlock)*By )*Br
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+
+      case('jydynflx')
+         ! y-component of torque from dynamic (matter) stress
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(z_,i,j,k,iBlock)*RhoUx &
+                       - Xyz_DGB(x_,i,j,k,iBlock)*RhoUz ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+      case('jyoutdynflx')
+         ! y-component of outward-only dynamic torque, using max(rho*U_R,0)
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  RhoUr = max(RhoUr, 0.0)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(z_,i,j,k,iBlock)*RhoUx &
+                       - Xyz_DGB(x_,i,j,k,iBlock)*RhoUz ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+      case('jyindynflx')
+         ! y-component of inward-only dynamic torque, using min(rho*U_R,0)
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  RhoUr = min(RhoUr, 0.0)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(z_,i,j,k,iBlock)*RhoUx &
+                       - Xyz_DGB(x_,i,j,k,iBlock)*RhoUz ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+
+      case('jymagflx')
+         ! y-component of torque from magnetic (Maxwell) stress
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock))CYCLE
+               FullB_DG = State_VGB(Bx_:Bz_,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               if(UseB0)FullB_DG = FullB_DG &
+                    +B0_DGB(:,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  Bx = FullB_DG(x_,i,j,k)
+                  By = FullB_DG(y_,i,j,k)
+                  Bz = FullB_DG(z_,i,j,k)
+                  Br = ( Bx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       + By*Xyz_DGB(y_,i,j,k,iBlock) &
+                       + Bz*Xyz_DGB(z_,i,j,k,iBlock) )/r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       -( Xyz_DGB(z_,i,j,k,iBlock)*Bx &
+                        - Xyz_DGB(x_,i,j,k,iBlock)*Bz )*Br
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+
+      case('jyflx')
+         ! y-component of total torque = dynamic + magnetic torque flux
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock))CYCLE
+               FullB_DG = State_VGB(Bx_:Bz_,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               if(UseB0)FullB_DG = FullB_DG &
+                    +B0_DGB(:,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  Bx = FullB_DG(x_,i,j,k)
+                  By = FullB_DG(y_,i,j,k)
+                  Bz = FullB_DG(z_,i,j,k)
+                  Br = ( Bx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       + By*Xyz_DGB(y_,i,j,k,iBlock) &
+                       + Bz*Xyz_DGB(z_,i,j,k,iBlock) )/r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(z_,i,j,k,iBlock)*RhoUx &
+                       - Xyz_DGB(x_,i,j,k,iBlock)*RhoUz ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock) &
+                       -( Xyz_DGB(z_,i,j,k,iBlock)*Bx &
+                        - Xyz_DGB(x_,i,j,k,iBlock)*Bz )*Br
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+
+      case('jzdynflx')
+         ! z-component of torque from dynamic (matter) stress
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(x_,i,j,k,iBlock)*RhoUy &
+                       - Xyz_DGB(y_,i,j,k,iBlock)*RhoUx ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+      case('jzoutdynflx')
+         ! z-component of outward-only dynamic torque, using max(rho*U_R,0)
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  RhoUr = max(RhoUr, 0.0)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(x_,i,j,k,iBlock)*RhoUy &
+                       - Xyz_DGB(y_,i,j,k,iBlock)*RhoUx ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+      case('jzindynflx')
+         ! z-component of inward-only dynamic torque, using min(rho*U_R,0)
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock)) CYCLE
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  RhoUr = min(RhoUr, 0.0)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(x_,i,j,k,iBlock)*RhoUy &
+                       - Xyz_DGB(y_,i,j,k,iBlock)*RhoUx ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock)
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+
+      case('jzmagflx')
+         ! z-component of torque from magnetic (Maxwell) stress
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock))CYCLE
+               FullB_DG = State_VGB(Bx_:Bz_,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               if(UseB0)FullB_DG = FullB_DG &
+                    +B0_DGB(:,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  Bx = FullB_DG(x_,i,j,k)
+                  By = FullB_DG(y_,i,j,k)
+                  Bz = FullB_DG(z_,i,j,k)
+                  Br = ( Bx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       + By*Xyz_DGB(y_,i,j,k,iBlock) &
+                       + Bz*Xyz_DGB(z_,i,j,k,iBlock) )/r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       -( Xyz_DGB(x_,i,j,k,iBlock)*By &
+                        - Xyz_DGB(y_,i,j,k,iBlock)*Bx )*Br
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
+         end do
+
+      case('jzflx')
+         ! z-component of total torque = dynamic + magnetic torque flux
+         iVarTot = iVarTot - 1
+         do iR=1,nLogR
+            iVarTot = iVarTot + 1
+            r = LogR_I(iR)
+            do iBlock = 1, nBlock
+               if(Unused_B(iBlock))CYCLE
+               FullB_DG = State_VGB(Bx_:Bz_,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               if(UseB0)FullB_DG = FullB_DG &
+                    +B0_DGB(:,0:nI+1,0:nJ+1,0:nK+1,iBlock)
+               do k=0,nK+1; do j=0,nJ+1; do i=0,nI+1
+                  RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
+                  RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
+                  RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
+                       +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
+                       / r_GB(i,j,k,iBlock)
+                  Bx = FullB_DG(x_,i,j,k)
+                  By = FullB_DG(y_,i,j,k)
+                  Bz = FullB_DG(z_,i,j,k)
+                  Br = ( Bx*Xyz_DGB(x_,i,j,k,iBlock) &
+                       + By*Xyz_DGB(y_,i,j,k,iBlock) &
+                       + Bz*Xyz_DGB(z_,i,j,k,iBlock) )/r_GB(i,j,k,iBlock)
+                  Tmp1_GB(i,j,k,iBlock) = &
+                       ( Xyz_DGB(x_,i,j,k,iBlock)*RhoUy &
+                       - Xyz_DGB(y_,i,j,k,iBlock)*RhoUx ) &
+                       *RhoUr/State_VGB(iRho,i,j,k,iBlock) &
+                       -( Xyz_DGB(x_,i,j,k,iBlock)*By &
+                        - Xyz_DGB(y_,i,j,k,iBlock)*Bx )*Br
+               end do; end do; end do
+            end do
+            LogVar_I(iVarTot) = calc_sphere('integrate',360, r, Tmp1_GB)
          end do
 
          ! simple circular Integral_I
@@ -1434,7 +1878,7 @@ contains
           LogVar_I(iVarTot:iVarTot+nLogR-1)=LogVar_I(iVarTot:iVarTot+nLogR-1)&
                *No2Io_V(UnitX_)**2
           iVarTot = iVarTot+nLogR-1
-       case('rhoflx')
+       case('rhoflx','rhooutflx','rhoinflx')
           LogVar_I(iVarTot:iVarTot+nLogR-1)=LogVar_I(iVarTot:iVarTot+nLogR-1)&
                *(No2Si_V(UnitRho_)*No2Si_V(UnitU_)*No2Si_V(UnitX_)**2)
           iVarTot = iVarTot+nLogR-1
@@ -1453,6 +1897,12 @@ contains
        case('pvecflx')
           LogVar_I(iVarTot:iVarTot+nLogR-1)=LogVar_I(iVarTot:iVarTot+nLogR-1)&
                *(No2Si_V(UnitPoynting_)*No2Si_V(UnitX_)**2)
+          iVarTot = iVarTot+nLogR-1
+       case('jxdynflx','jxoutdynflx','jxindynflx','jxmagflx','jxflx', &
+            'jydynflx','jyoutdynflx','jyindynflx','jymagflx','jyflx', &
+            'jzdynflx','jzoutdynflx','jzindynflx','jzmagflx','jzflx')
+          LogVar_I(iVarTot:iVarTot+nLogR-1)=LogVar_I(iVarTot:iVarTot+nLogR-1)&
+               *(No2Si_V(UnitP_)*No2Si_V(UnitX_)**3)
           iVarTot = iVarTot+nLogR-1
        case('e2dflx')
           ! circular integral of the azimuthal component of the electric field
