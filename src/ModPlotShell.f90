@@ -277,7 +277,6 @@ contains
 
     integer :: iVar, iR, iLon, iLat, iError
     character(len=500) :: NameVar
-    character(len=len(NameUnit)) :: NameUnitShell
 
     logical:: DoTest
     character(len=*), parameter:: NameSub = 'write_plot_shell'
@@ -294,8 +293,11 @@ contains
 
     ! Save results to disk
     if(iProc==0) then
-       ! Build a single-line list of variable names.
-       if(nR==1)then
+       ! Build a single-line list of variable names. Tecplot shell files keep
+       ! all three spherical coordinates even for singleton slices.
+       if(TypeFile_I(iFile) == 'tec')then
+          NameVar = 'r lon lat'
+       elseif(nR==1)then
           NameVar = 'lon lat'
        elseif(nLon==1)then
           NameVar = 'r lat'
@@ -322,14 +324,21 @@ contains
                / PlotVar_VIII(0,iR,iLon,iLat)
        end do; end do; end do
 
-       NameUnitShell = NameUnit
-       if(TypeFile_I(iFile) == 'tec') call fix_shell_tec_header(NameUnitShell)
-
        ! Call save_plot_file to write data to disk
-       if(nR == 1)then
+       if(TypeFile_I(iFile) == 'tec')then
           call save_plot_file(NameFile, &
                TypeFileIn=TypeFile_I(iFile), &
-               StringHeaderIn=NameUnitShell, &
+               StringHeaderIn=NameUnit, &
+               nStepIn=nStep, &
+               TimeIn=tSimulation, &
+               NameVarIn = NameVar, &
+               CoordMinIn_D = [rMin, cRadtoDeg*LonMin, cRadtoDeg*LatMin], &
+               CoordMaxIn_D = [rMax, cRadtoDeg*LonMax, cRadtoDeg*LatMax], &
+               VarIn_VIII = PlotVar_VIII(1:,:,:,:))
+       elseif(nR == 1)then
+          call save_plot_file(NameFile, &
+               TypeFileIn=TypeFile_I(iFile), &
+               StringHeaderIn=NameUnit, &
                nStepIn=nStep, &
                TimeIn=tSimulation, &
                NameVarIn = NameVar, &
@@ -339,7 +348,7 @@ contains
        elseif(nLon == 1)then
           call save_plot_file(NameFile, &
                TypeFileIn=TypeFile_I(iFile), &
-               StringHeaderIn=NameUnitShell, &
+               StringHeaderIn=NameUnit, &
                nStepIn=nStep, &
                TimeIn=tSimulation, &
                NameVarIn = NameVar, &
@@ -349,7 +358,7 @@ contains
        elseif(nLat == 1)then
           call save_plot_file(NameFile, &
                TypeFileIn=TypeFile_I(iFile), &
-               StringHeaderIn=NameUnitShell, &
+               StringHeaderIn=NameUnit, &
                nStepIn=nStep, &
                TimeIn=tSimulation, &
                NameVarIn = NameVar, &
@@ -359,7 +368,7 @@ contains
        else
           call save_plot_file(NameFile, &
                TypeFileIn=TypeFile_I(iFile), &
-               StringHeaderIn=NameUnitShell, &
+               StringHeaderIn=NameUnit, &
                nStepIn=nStep, &
                TimeIn=tSimulation, &
                NameVarIn = NameVar, &
@@ -374,65 +383,6 @@ contains
 
     call test_stop(NameSub, DoTest)
   end subroutine write_plot_shell
-  !============================================================================
-  subroutine fix_shell_tec_header(StringHeader)
-
-    ! Shell plots can be lower dimensional slices of the native (r, lon, lat)
-    ! shell grid. Keep the Tecplot VARIABLES header synchronized with the
-    ! coordinates actually passed to save_plot_file.
-
-    character(len=*), intent(inout):: StringHeader
-
-    character(len=len(StringHeader)):: StringFixed
-    integer:: iPos, iStart, iEnd, iQuote, iTecVar
-    logical:: DoKeep, IsFirst
-    logical:: KeepCoord_I(3)
-    !--------------------------------------------------------------------------
-    if(index(StringHeader, 'VARIABLES') /= 1) RETURN
-
-    KeepCoord_I = .true.
-    if(nR == 1)then
-       KeepCoord_I = [.false., .true., .true.]
-    elseif(nLon == 1)then
-       KeepCoord_I = [.true., .false., .true.]
-    elseif(nLat == 1)then
-       KeepCoord_I = [.true., .true., .false.]
-    end if
-
-    StringFixed = 'VARIABLES ='
-    IsFirst = .true.
-    iTecVar = 0
-    iPos = 1
-    do
-       iQuote = index(StringHeader(iPos:), '"')
-       if(iQuote == 0) EXIT
-       iStart = iPos + iQuote - 1
-
-       iQuote = index(StringHeader(iStart + 1:), '"')
-       if(iQuote == 0) EXIT
-       iEnd = iStart + iQuote
-
-       iTecVar = iTecVar + 1
-       if(iTecVar <= 3)then
-          DoKeep = KeepCoord_I(iTecVar)
-       else
-          DoKeep = .true.
-       end if
-
-       if(DoKeep)then
-          if(IsFirst)then
-             StringFixed = trim(StringFixed)//StringHeader(iStart:iEnd)
-             IsFirst = .false.
-          else
-             StringFixed = trim(StringFixed)//', '//StringHeader(iStart:iEnd)
-          end if
-       end if
-       iPos = iEnd + 1
-    end do
-
-    if(iTecVar >= 3) StringHeader = StringFixed
-
-  end subroutine fix_shell_tec_header
   !============================================================================
 end module ModPlotShell
 !==============================================================================
