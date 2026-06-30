@@ -1198,6 +1198,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1222,6 +1228,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1247,6 +1259,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1302,6 +1320,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1335,6 +1359,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1359,6 +1389,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1384,6 +1420,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1439,6 +1481,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1472,6 +1520,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1496,6 +1550,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1521,6 +1581,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
@@ -1576,6 +1642,12 @@ contains
                   RhoUx = State_VGB(iRhoUx,i,j,k,iBlock)
                   RhoUy = State_VGB(iRhoUy,i,j,k,iBlock)
                   RhoUz = State_VGB(iRhoUz,i,j,k,iBlock)
+                  if(UseRotatingFrame)then
+                     RhoUx = RhoUx - State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(y_,i,j,k,iBlock)
+                     RhoUy = RhoUy + State_VGB(iRho,i,j,k,iBlock) &
+                          *OmegaBody*Xyz_DGB(x_,i,j,k,iBlock)
+                  end if
                   RhoUr = ( RhoUx*Xyz_DGB(x_,i,j,k,iBlock) &
                        +    RhoUy*Xyz_DGB(y_,i,j,k,iBlock) &
                        +    RhoUz*Xyz_DGB(z_,i,j,k,iBlock) ) &
