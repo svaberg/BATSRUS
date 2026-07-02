@@ -114,6 +114,7 @@ OBJECTS = \
 	ModUserInterface.o \
 	ModZdiMagnetogram.o \
 	ModUserAwsomZdiConfig.o \
+	ModUserAwsomZdiB0.o \
 	ModUserAwsomZdiBoundary.o \
 	ModUserAwsomZdiInput.o \
 	ModUserAwsomZdiPlot.o \

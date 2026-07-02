@@ -23,6 +23,8 @@ contains
          UseZdiBoundary, UseZdiBoundaryRadial, TypeZdiBoundary, TypeZdiRamp, &
          ZdiBcStrength, ZdiBcScale, ZdiRampIterStart, ZdiRampIterStop, &
          ZdiRampStart, ZdiRampStop, update_zdi_scale_cache
+    use ModUserAwsomZdiB0, ONLY: UseZdiB0, rSourceSurfaceZdiB0, nOrderZdiB0, &
+         nOrderB0, init_zdi_b0
     use ModUserAwsomZdiSelfTest, ONLY: UseZdiSelfTest, run_zdi_selftest_startup_dump
 
     !--------------------------------------------------------------------------
@@ -53,6 +55,17 @@ contains
        end if
        if(UseZdiSelfTest) call run_zdi_selftest_startup_dump( &
             trim(NameZdiCoeffFile), ZdiFieldScaleIo, ZdiLonShiftDeg, ZdiLonShift)
+    end if
+
+    if(UseZdiB0)then
+       if(.not.zdi_is_loaded()) &
+            call stop_mpi('UseZdiB0 requires UseZdiMagnetogram and a valid file')
+       call init_zdi_b0()
+       if(iProc == 0)then
+          call write_prefix; write(iUnitOut,*) &
+               'ZDI PFSS/B0 enabled: rSourceSurface=', rSourceSurfaceZdiB0, &
+               ' nOrderZdiB0=', nOrderZdiB0, ' nOrderUsed=', nOrderB0
+       end if
     end if
 
     if(UseZdiBoundary .and. .not.zdi_is_loaded()) then

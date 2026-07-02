@@ -31,21 +31,6 @@ HGR			TypeCoordSystem
 1.0			IonCharge [e]
 1.0			ElectronTemperatureRatio
 
-#HARMONICSFILE
-Param/ZDI/coeff-Mel25-5_wso.dat		NameHarmonicsFile
-
-#FACTORB0
-0.2			FactorB0
-
-HARMONICSGRID
-1.0			rMagnetogram
-25.0			rSourceSurface
-T			IsLogRadius
-180			MaxOrder
-100			nR
-180			nLon
-90			nLat
-
 #POYNTINGFLUX
 1e6			PoyntingFluxPerBSi
 
@@ -64,7 +49,7 @@ stochasticheating		TypeHeatPartitioning
 T			UseRadCooling
 
 #USERSWITCH
-+init +ic		StringSwitch
++init +ic +b0		StringSwitch
 
 #COARSEAXIS
 T			UseCoarseAxis
@@ -81,6 +66,11 @@ T			UseZdiMagnetogram
 Param/ZDI/coeff-Mel25-5.dat	NameZdiCoeffFile
 0.1			ZdiFieldScaleIo
 0.0			ZdiLonShiftDeg
+
+#ZDIB0
+T			UseZdiB0
+25.0			rSourceSurfaceZdiB0
+-1			nOrderZdiB0
 
 #ZDIBOUNDARY
 T			UseZdiBoundary

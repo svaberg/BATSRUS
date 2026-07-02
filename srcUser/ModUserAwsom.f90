@@ -1836,6 +1836,7 @@ module ModUser
     use EEE_ModCommonVariables, ONLY: UseTD
     use ModPhysics, ONLY: Si2No_V, UnitB_
     use BATL_lib, ONLY: IsRzGeometry, z_
+    use ModUserAwsomZdiB0, ONLY: UseZdiB0, get_zdi_b0
 
     real, intent(in) :: x, y, z
     real, intent(inout):: B0_D(3)
@@ -1856,6 +1857,12 @@ module ModUser
        Xyz_D = [x, y, z]
        call EEE_get_B0(Xyz_D, B_D, tSimulation)
        B0_D = B0_D + B_D*Si2No_V(UnitB_)
+       RETURN
+    end if
+
+    if(UseZdiB0)then
+       call get_zdi_b0([x, y, z], B_D)
+       B0_D = B0_D + B_D
        RETURN
     end if
 

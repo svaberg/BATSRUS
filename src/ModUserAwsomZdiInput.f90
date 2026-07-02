@@ -12,6 +12,7 @@ contains
 
     use ModUserAwsomZdiConfig, ONLY: read_zdi_magnetogram_param, &
          read_zdi_boundary_param
+    use ModUserAwsomZdiB0, ONLY: read_zdi_b0_param
     use ModUserAwsomZdiSelfTest, ONLY: read_zdi_selftest_param
 
     character(len=*), intent(in) :: NameCommand
@@ -22,6 +23,8 @@ contains
     select case(NameCommand)
     case('#ZDIMAGNETOGRAM')
        call read_zdi_magnetogram_param()
+    case('#ZDIB0')
+       call read_zdi_b0_param()
     case('#ZDIBOUNDARY')
        call read_zdi_boundary_param()
     case('#ZDISELFTEST')
