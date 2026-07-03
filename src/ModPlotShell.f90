@@ -276,7 +276,10 @@ contains
     character(len=*), intent(in) :: NameFile, NameVar_V(nPlotVar), NameUnit
 
     integer :: iVar, iR, iLon, iLat, iError
+    integer :: nTecIndexVar, iTecVar
     character(len=500) :: NameVar
+    character(len=1500) :: NameHeader
+    real, allocatable :: PlotTec_VIII(:,:,:,:)
 
     logical:: DoTest
     character(len=*), parameter:: NameSub = 'write_plot_shell'
@@ -295,8 +298,24 @@ contains
     if(iProc==0) then
        ! Build a single-line list of variable names. Tecplot shell files keep
        ! all three spherical coordinates even for singleton slices.
+       nTecIndexVar = 0
+       NameHeader = NameUnit
+
        if(TypeFile_I(iFile) == 'tec')then
           NameVar = 'r lon lat'
+          if(nR == 1)then
+             NameVar = trim(NameVar)//' I'
+             nTecIndexVar = nTecIndexVar + 1
+          end if
+          if(nLon == 1)then
+             NameVar = trim(NameVar)//' J'
+             nTecIndexVar = nTecIndexVar + 1
+          end if
+          if(nLat == 1)then
+             NameVar = trim(NameVar)//' K'
+             nTecIndexVar = nTecIndexVar + 1
+          end if
+          call add_shell_tec_index_names(NameHeader)
        elseif(nR==1)then
           NameVar = 'lon lat'
        elseif(nLon==1)then
@@ -326,15 +345,34 @@ contains
 
        ! Call save_plot_file to write data to disk
        if(TypeFile_I(iFile) == 'tec')then
+          allocate(PlotTec_VIII(nPlotVar+nTecIndexVar,nR,nLon,nLat))
+          iTecVar = 0
+          if(nR == 1)then
+             iTecVar = iTecVar + 1
+             PlotTec_VIII(iTecVar,:,:,:) = 1.0
+          end if
+          if(nLon == 1)then
+             iTecVar = iTecVar + 1
+             PlotTec_VIII(iTecVar,:,:,:) = 1.0
+          end if
+          if(nLat == 1)then
+             iTecVar = iTecVar + 1
+             PlotTec_VIII(iTecVar,:,:,:) = 1.0
+          end if
+          PlotTec_VIII(iTecVar+1:iTecVar+nPlotVar,:,:,:) = &
+               PlotVar_VIII(1:nPlotVar,:,:,:)
+
           call save_plot_file(NameFile, &
                TypeFileIn=TypeFile_I(iFile), &
-               StringHeaderIn=NameUnit, &
+               StringHeaderIn=NameHeader, &
                nStepIn=nStep, &
                TimeIn=tSimulation, &
                NameVarIn = NameVar, &
                CoordMinIn_D = [rMin, cRadtoDeg*LonMin, cRadtoDeg*LatMin], &
                CoordMaxIn_D = [rMax, cRadtoDeg*LonMax, cRadtoDeg*LatMax], &
-               VarIn_VIII = PlotVar_VIII(1:,:,:,:))
+               VarIn_VIII = PlotTec_VIII)
+
+          deallocate(PlotTec_VIII)
        elseif(nR == 1)then
           call save_plot_file(NameFile, &
                TypeFileIn=TypeFile_I(iFile), &
@@ -383,6 +421,43 @@ contains
 
     call test_stop(NameSub, DoTest)
   end subroutine write_plot_shell
+  !============================================================================
+  subroutine add_shell_tec_index_names(NameHeader)
+
+    ! save_plot_file writes index columns only for non-singleton dimensions.
+    ! Add explicit singleton index variables so shell Tecplot output always
+    ! exposes I, J and K by name.
+
+    character(len=*), intent(inout) :: NameHeader
+
+    character(len=30) :: NameIndex
+    integer :: iChar, nQuote, iInsert
+
+    !--------------------------------------------------------------------------
+    if(NameHeader(1:11) /= 'VARIABLES =') RETURN
+
+    NameIndex = ''
+    if(nR == 1) NameIndex = trim(NameIndex)//', "I"'
+    if(nLon == 1) NameIndex = trim(NameIndex)//', "J"'
+    if(nLat == 1) NameIndex = trim(NameIndex)//', "K"'
+    if(NameIndex == '') RETURN
+
+    iInsert = 0
+    nQuote = 0
+    do iChar = 1, len_trim(NameHeader)
+       if(NameHeader(iChar:iChar) /= '"') CYCLE
+       nQuote = nQuote + 1
+       if(nQuote == 6)then
+          iInsert = iChar
+          EXIT
+       end if
+    end do
+    if(iInsert == 0) RETURN
+
+    NameHeader = NameHeader(:iInsert)//trim(NameIndex)// &
+         trim(NameHeader(iInsert+1:))
+
+  end subroutine add_shell_tec_index_names
   !============================================================================
 end module ModPlotShell
 !==============================================================================
