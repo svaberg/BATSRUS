@@ -1,0 +1,15 @@
+#INCLUDE
+Param/ZDI/PARAM.AwsomZdiPfssBrAbsB.in
+
+#DESCRIPTION
+Param/ZDI/PARAM.AwsomZdiPfssBrAbsBCheck.in		StringDescription
+
+#USERINPUTBEGIN -----------------------------------
+#ZDIBOUNDARYCHECK
+T			UseZdiBoundaryCheck
+1.0e-8			ZdiBoundaryCheckTol
+#USERINPUTEND -------------------------------------
+
+#STOP
+5			MaxIteration
+-1.0			tSimulationMax

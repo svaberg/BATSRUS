@@ -14,9 +14,11 @@ contains
 
     use ModCoordTransform, ONLY: rot_xyz_rlonlat, xyz_to_rlonlat
     use ModNumConst, ONLY: cPi, cTwoPi
+    use ModUtilities, ONLY: CON_stop
     use ModZdiMagnetogram, ONLY: eval_zdi_surface_field
     use ModUserAwsomZdiConfig, ONLY: TypeZdiBoundary, ZdiBcScale, &
-         ZdiFieldScaleNo, ZdiLonShift
+         ZdiFieldScaleNo, ZdiLonShift, UseZdiBoundaryCheck, &
+         ZdiBoundaryCheckTol
 
     real, intent(in)    :: XyzFace_D(3), B0Face_D(3), Runit_D(3), MixZdi
     real, intent(inout) :: Br1_D(3), Bt1_D(3)
@@ -27,9 +29,11 @@ contains
     real :: ZdiRlonLat_D(3), XyzRlonLat_DD(3,3)
     real :: ZdiTotal_D(3), ZdiBr_D(3), ZdiBt_D(3)
     real :: B1tTarget_D(3), B1Target_D(3), Btotal_D(3)
-    real :: BtCurrent_D(3), BtDir_D(3), Bdir_D(3)
+    real :: BtCurrent_D(3), BtDir_D(3), Bdir_D(3), Bcheck_D(3)
     real :: ZdiBrScalar, BtCurrentMag, BtTargetMag, BtNewMag
-    real :: ZdiBtMag, ZdiMag, BcurrentMag, BnewMag
+    real :: ZdiBtMag, ZdiMag, BcurrentMag, BnewMag, TargetBmag
+    real :: ErrorBr, ErrorBmag
+    character(len=*), parameter :: NameSub = 'apply_zdi_boundary_target_cpu'
     !--------------------------------------------------------------------------
     call xyz_to_rlonlat(XyzFace_D, rZdi, LonZdi, LatZdi)
     LonZdi = modulo(LonZdi - ZdiLonShift, cTwoPi)
@@ -52,6 +56,7 @@ contains
 
     Btotal_D = B0Face_D + Br1_D + Bt1_D
     BtCurrent_D = Btotal_D - sum(Btotal_D*Runit_D)*Runit_D
+    TargetBmag = -1.0
 
     select case(trim(TypeZdiBoundary))
     case('clamp', 'nudge')
@@ -79,6 +84,7 @@ contains
        end if
 
        BtNewMag = (1.0 - MixZdi)*BtCurrentMag + MixZdi*BtTargetMag
+       TargetBmag = sqrt(ZdiBrScalar**2 + BtNewMag**2)
        B1Target_D = ZdiBr_D + BtNewMag*BtDir_D - B0Face_D
        Br1_D = sum(B1Target_D*Runit_D)*Runit_D
        Bt1_D = B1Target_D - Br1_D
@@ -96,6 +102,7 @@ contains
        end if
 
        BnewMag = (1.0 - MixZdi)*BcurrentMag + MixZdi*ZdiMag
+       TargetBmag = BnewMag
        B1Target_D = BnewMag*Bdir_D - B0Face_D
        Br1_D = sum(B1Target_D*Runit_D)*Runit_D
        Bt1_D = B1Target_D - Br1_D
@@ -105,6 +112,26 @@ contains
        B1Target_D = ZdiBr_D - B0Face_D
        Br1_D = sum(B1Target_D*Runit_D)*Runit_D
     end select
+
+    if(UseZdiBoundaryCheck)then
+       Bcheck_D = B0Face_D + Br1_D + Bt1_D
+       ErrorBr = 0.0
+       ErrorBmag = 0.0
+
+       select case(trim(TypeZdiBoundary))
+       case('absb', 'abs_b')
+          ! absb intentionally preserves the current direction, not ZDI Br.
+       case default
+          ErrorBr = abs(sum(Bcheck_D*Runit_D) - ZdiBrScalar)
+       end select
+
+       if(TargetBmag >= 0.0) &
+            ErrorBmag = abs(sqrt(sum(Bcheck_D**2)) - TargetBmag)
+
+       if(max(ErrorBr, ErrorBmag) > ZdiBoundaryCheckTol) &
+            call CON_stop(NameSub//': ZDI boundary self-check failed', &
+            ErrorBr, ErrorBmag, ZdiBoundaryCheckTol)
+    end if
 
   end subroutine apply_zdi_boundary_target_cpu
 

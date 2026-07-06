@@ -22,10 +22,13 @@ module ModUserAwsomZdiConfig
   integer, public :: ZdiRampIterStop  = 0
   real, public :: ZdiRampStart = -1.0
   real, public :: ZdiRampStop  = -1.0
+  logical, public :: UseZdiBoundaryCheck = .false.
+  real, public :: ZdiBoundaryCheckTol = 1.0e-8
   integer :: iZdiRampProgressLogged = -1
 
   public :: read_zdi_magnetogram_param
   public :: read_zdi_boundary_param
+  public :: read_zdi_boundary_check_param
   public :: get_zdi_boundary_ramp_mix
   public :: get_zdi_boundary_mix
   public :: update_zdi_scale_cache
@@ -60,6 +63,15 @@ contains
     call read_var('ZdiRampStart',    ZdiRampStart)
     call read_var('ZdiRampStop',     ZdiRampStop)
   end subroutine read_zdi_boundary_param
+
+  subroutine read_zdi_boundary_check_param()
+    use ModReadParam, ONLY: read_var
+    !--------------------------------------------------------------------------
+    call read_var('UseZdiBoundaryCheck', UseZdiBoundaryCheck)
+    if(.not.UseZdiBoundaryCheck) RETURN
+
+    call read_var('ZdiBoundaryCheckTol', ZdiBoundaryCheckTol)
+  end subroutine read_zdi_boundary_check_param
 
   subroutine get_zdi_boundary_ramp_mix(nIteration, tSimulation, FrampZdi, MixZdi)
     use ModNumConst, ONLY: cPi

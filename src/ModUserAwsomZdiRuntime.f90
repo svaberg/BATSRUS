@@ -22,7 +22,8 @@ contains
          ZdiFieldScaleIo, ZdiFieldScaleNo, ZdiLonShiftDeg, ZdiLonShift, &
          UseZdiBoundary, UseZdiBoundaryRadial, TypeZdiBoundary, TypeZdiRamp, &
          ZdiBcStrength, ZdiBcScale, ZdiRampIterStart, ZdiRampIterStop, &
-         ZdiRampStart, ZdiRampStop, update_zdi_scale_cache
+         ZdiRampStart, ZdiRampStop, UseZdiBoundaryCheck, ZdiBoundaryCheckTol, &
+         update_zdi_scale_cache
     use ModUserAwsomZdiB0, ONLY: UseZdiB0, rSourceSurfaceZdiB0, nOrderZdiB0, &
          nOrderB0, init_zdi_b0
     use ModUserAwsomZdiSelfTest, ONLY: UseZdiSelfTest, run_zdi_selftest_startup_dump
@@ -81,6 +82,10 @@ contains
             UseZdiBoundaryRadial
        call write_prefix; write(iUnitOut,*) 'ZDI ramp iter/time=', &
             ZdiRampIterStart, ZdiRampIterStop, ZdiRampStart, ZdiRampStop
+       if(UseZdiBoundaryCheck)then
+          call write_prefix; write(iUnitOut,*) &
+               'ZDI boundary self-check enabled: tol=', ZdiBoundaryCheckTol
+       end if
     end if
 
   end subroutine run_zdi_user_init_runtime

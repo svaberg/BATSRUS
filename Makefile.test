@@ -38,6 +38,7 @@ test_help:
 	@echo "    test_awsom_zdiselftest_hires (run AWSoM ZDI startup self-test dump, 0.5 deg)"
 	@echo "    test_awsom_zdiselftest_hires_render (render PNG from hi-res self-test dump)"
 	@echo "    test_awsom_zdipfss         (run AWSoM PFSS+ZDI free/clamp experiment pair)"
+	@echo "    test_awsom_zdimagbc        (run ZDI |B| boundary self-check modes)"
 	@echo "    test_awsom_bvector         (run AWSoM with vector B field)"
 	@echo "    test_awsom_gpu             (run AWSoM corona test on GPU)"
 	@echo "    test_awsom_large_gpu       (run large AWSoM corona test on GPU)"
@@ -1241,6 +1242,8 @@ TESTDIR_AWSOM_ZDISELFTEST ?= run_test_awsom_zdi_selftest
 TESTDIR_AWSOM_ZDISELFTEST_HIRES ?= run_test_awsom_zdi_selftest_hires
 TESTDIR_AWSOM_ZDIPFSS_FREE  ?= run_test_awsom_mel25_pfsszdi_free
 TESTDIR_AWSOM_ZDIPFSS_CLAMP ?= run_test_awsom_mel25_pfsszdi_clamp
+TESTDIR_AWSOM_ZDIMAGBC_BRABSB ?= run_test_awsom_mel25_zdimagbc_brabsb
+TESTDIR_AWSOM_ZDIMAGBC_ABSB   ?= run_test_awsom_mel25_zdimagbc_absb
 
 test_awsom_zdiselftest:
 	touch test_awsom_zdiselftest.diff
@@ -1380,6 +1383,74 @@ test_awsom_zdipfss_clamp_check:
 	@echo "[clamp] shell frames:" `ls ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_*_n*.out | wc -l` >> test_awsom_zdipfss_clamp.diff
 	@echo "[clamp] final shell header:" `head -n 1 $$(ls ${TESTDIR_AWSOM_ZDIPFSS_CLAMP}/SC/IO2/shl_var_*_n00000100.out | head -n 1)` >> test_awsom_zdipfss_clamp.diff
 	ls -l test_awsom_zdipfss_clamp.diff
+
+test_awsom_zdimagbc:
+	touch test_awsom_zdimagbc.diff
+	@echo "test_awsom_zdimagbc_compile..." > test_awsom_zdimagbc.diff
+	$(MAKE) test_awsom_zdimagbc_compile
+	@echo "test_awsom_zdimagbc_rundir..." >> test_awsom_zdimagbc.diff
+	$(MAKE) test_awsom_zdimagbc_rundir
+	@echo "test_awsom_zdimagbc_run..." >> test_awsom_zdimagbc.diff
+	$(MAKE) test_awsom_zdimagbc_run
+	@echo "test_awsom_zdimagbc_check..." >> test_awsom_zdimagbc.diff
+	$(MAKE) test_awsom_zdimagbc_check
+
+test_awsom_zdimagbc_compile:
+	./Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4
+	$(MAKE) BATSRUS
+	make PIDL
+
+test_awsom_zdimagbc_rundir:
+	$(MAKE) test_awsom_zdimagbc_brabsb_rundir
+	$(MAKE) test_awsom_zdimagbc_absb_rundir
+
+test_awsom_zdimagbc_run:
+	$(MAKE) test_awsom_zdimagbc_brabsb_run
+	$(MAKE) test_awsom_zdimagbc_absb_run
+
+test_awsom_zdimagbc_check:
+	touch test_awsom_zdimagbc_brabsb.diff
+	touch test_awsom_zdimagbc_absb.diff
+	$(MAKE) test_awsom_zdimagbc_brabsb_check
+	$(MAKE) test_awsom_zdimagbc_absb_check
+	@cat test_awsom_zdimagbc_brabsb.diff test_awsom_zdimagbc_absb.diff > test_awsom_zdimagbc.diff
+	ls -l test_awsom_zdimagbc.diff
+
+test_awsom_zdimagbc_brabsb_rundir:
+	rm -rf ${TESTDIR_AWSOM_ZDIMAGBC_BRABSB}
+	$(MAKE) rundir RUNDIR=${TESTDIR_AWSOM_ZDIMAGBC_BRABSB} COMPONENT=SC STANDALONE=YES GMDIR=`pwd`
+	cd ${TESTDIR_AWSOM_ZDIMAGBC_BRABSB}; cp Param/ZDI/PARAM.AwsomZdiPfssBrAbsBCheck.in PARAM.in
+	@echo "Skipping TestParam.pl (rewrites symlinked Param/ZDI include files)"
+
+test_awsom_zdimagbc_absb_rundir:
+	rm -rf ${TESTDIR_AWSOM_ZDIMAGBC_ABSB}
+	$(MAKE) rundir RUNDIR=${TESTDIR_AWSOM_ZDIMAGBC_ABSB} COMPONENT=SC STANDALONE=YES GMDIR=`pwd`
+	cd ${TESTDIR_AWSOM_ZDIMAGBC_ABSB}; cp Param/ZDI/PARAM.AwsomZdiPfssAbsBCheck.in PARAM.in
+	@echo "Skipping TestParam.pl (rewrites symlinked Param/ZDI include files)"
+
+test_awsom_zdimagbc_brabsb_run:
+	cd ${TESTDIR_AWSOM_ZDIMAGBC_BRABSB}; ${MPIRUN} ./BATSRUS.exe > runlog
+
+test_awsom_zdimagbc_absb_run:
+	cd ${TESTDIR_AWSOM_ZDIMAGBC_ABSB}; ${MPIRUN} ./BATSRUS.exe > runlog
+
+test_awsom_zdimagbc_brabsb_check:
+	@echo "[brabsb] checking ZDI Br+|B| boundary self-check" > test_awsom_zdimagbc_brabsb.diff
+	@grep -q "ZDI boundary mode=brabsb" ${TESTDIR_AWSOM_ZDIMAGBC_BRABSB}/runlog
+	@grep -q "ZDI boundary self-check enabled" ${TESTDIR_AWSOM_ZDIMAGBC_BRABSB}/runlog
+	@grep -q "Error report: no errors" ${TESTDIR_AWSOM_ZDIMAGBC_BRABSB}/runlog
+	@ls ${TESTDIR_AWSOM_ZDIMAGBC_BRABSB}/SC/IO2/shl_var_*_n00000005.out >/dev/null
+	@echo "[brabsb] final shell header:" `head -n 1 $$(ls ${TESTDIR_AWSOM_ZDIMAGBC_BRABSB}/SC/IO2/shl_var_*_n00000005.out | head -n 1)` >> test_awsom_zdimagbc_brabsb.diff
+	ls -l test_awsom_zdimagbc_brabsb.diff
+
+test_awsom_zdimagbc_absb_check:
+	@echo "[absb] checking ZDI |B| boundary self-check" > test_awsom_zdimagbc_absb.diff
+	@grep -q "ZDI boundary mode=absb" ${TESTDIR_AWSOM_ZDIMAGBC_ABSB}/runlog
+	@grep -q "ZDI boundary self-check enabled" ${TESTDIR_AWSOM_ZDIMAGBC_ABSB}/runlog
+	@grep -q "Error report: no errors" ${TESTDIR_AWSOM_ZDIMAGBC_ABSB}/runlog
+	@ls ${TESTDIR_AWSOM_ZDIMAGBC_ABSB}/SC/IO2/shl_var_*_n00000005.out >/dev/null
+	@echo "[absb] final shell header:" `head -n 1 $$(ls ${TESTDIR_AWSOM_ZDIMAGBC_ABSB}/SC/IO2/shl_var_*_n00000005.out | head -n 1)` >> test_awsom_zdimagbc_absb.diff
+	ls -l test_awsom_zdimagbc_absb.diff
 
 test_awsom:
 	touch test_awsom.diff
