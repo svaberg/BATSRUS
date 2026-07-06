@@ -14,7 +14,7 @@ module ModUserAwsomZdiConfig
 
   logical, public :: UseZdiBoundary = .false.
   logical, public :: UseZdiBoundaryRadial = .false.
-  character(len=20), public :: TypeZdiBoundary = 'off'   ! off/clamp/nudge
+  character(len=20), public :: TypeZdiBoundary = 'off'   ! off/clamp/nudge/brabsb/absb
   character(len=20), public :: TypeZdiRamp = 'cosine'    ! none/linear/cosine
   real, public :: ZdiBcStrength = 1.0
   real, public :: ZdiBcScale = 1.0
@@ -93,7 +93,7 @@ contains
     end select
 
     select case(trim(TypeZdiBoundary))
-    case('clamp')
+    case('clamp', 'brabsb', 'br_absb', 'absb', 'abs_b')
        MixZdi = FrampZdi
     case('nudge')
        MixZdi = min(1.0, max(0.0, ZdiBcStrength*FrampZdi))
@@ -138,7 +138,7 @@ contains
     if(.not.zdi_ramp_has_started(nIteration, tSimulation)) RETURN
 
     select case(trim(TypeZdiBoundary))
-    case('clamp')
+    case('clamp', 'brabsb', 'br_absb', 'absb', 'abs_b')
        MixMax = 1.0
     case('nudge')
        MixMax = min(1.0, max(0.0, ZdiBcStrength))

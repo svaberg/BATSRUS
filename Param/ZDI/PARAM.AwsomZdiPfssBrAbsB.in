@@ -1,0 +1,19 @@
+#INCLUDE
+Param/ZDI/PARAM.AwsomZdiPfss.Common.in
+
+#DESCRIPTION
+Param/ZDI/PARAM.AwsomZdiPfssBrAbsB.in		StringDescription
+
+#USERINPUTBEGIN -----------------------------------
+#ZDIBOUNDARY
+T			UseZdiBoundary
+F			UseZdiBoundaryRadial
+brabsb			TypeZdiBoundary
+none			TypeZdiRamp
+1.0			ZdiBcStrength
+1.0			ZdiBcScale
+1			ZdiRampIterStart
+30			ZdiRampIterStop
+-1.0			ZdiRampStart
+-1.0			ZdiRampStop
+#USERINPUTEND -------------------------------------
